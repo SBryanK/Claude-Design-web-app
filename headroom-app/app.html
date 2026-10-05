@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard · Headroom — Jabil credit early warning</title>
+<meta name="description" content="Headroom — an advanced credit management dashboard prototype for Jabil. Illustrative data only.">
+<meta name="color-scheme" content="light">
+
+<!-- Fonts are an enhancement: if there is no connection the system serif and
+     sans-serif stack in app.css takes over and the layout is unchanged. -->
+<link rel="stylesheet" href="css/app.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 44 44'%3E%3Ccircle cx='22' cy='22' r='20.5' fill='%231E3A2F'/%3E%3Cpath d='M13 27.5l6-7 4 3.5 8-10' stroke='%23fff' stroke-width='2.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='31' cy='14' r='3' fill='%23D98A12'/%3E%3C/svg%3E">
+
+</head>
+<body>
+
+<!-- The whole interface is built by js/app.js. Keeping the markup empty means
+     no screen can quietly depend on hand-written HTML that the router would
+     then replace, and it keeps this file readable.
+
+     This is the working dashboard. The landing page is index.html. -->
+<div class="app" id="app"></div>
+
+<noscript>
+  <div style="max-width:640px;margin:60px auto;padding:24px;font:16px/1.6 system-ui,sans-serif;color:#1B2620">
+    <h1 style="font-family:Georgia,serif;color:#1E3A2F">Headroom</h1>
+    <p>This prototype builds every screen in the browser, so it needs JavaScript enabled.</p>
+    <p style="color:#5F6B64">If you are seeing this, open the file in a browser with JavaScript on and reload.</p>
+  </div>
+</noscript>
+
+<!-- Load order matters: core defines the toolkit, data the portfolio, engine the
+     models, charts the drawing, ui the shared pieces, views the screens, assistant the
+     question answering, app the shell that mounts them. -->
+<script src="js/core.js"></script>
+<script src="js/data.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/terrain.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/views.js"></script>
+<script src="js/assistant.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

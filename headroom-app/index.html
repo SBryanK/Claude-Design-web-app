@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Headroom — credit risk, seen weeks before the breach</title>
+<meta name="description" content="Headroom is the proposed advanced Credit Management Dashboard for Jabil: it predicts limit breaches, scores deteriorating customers and explains every reason. Prototype on illustrative data.">
+<meta name="color-scheme" content="light">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 44 44'%3E%3Ccircle cx='22' cy='22' r='20' fill='%230A3521'/%3E%3Cpath d='M6 30.5c4.5-1.6 7.4-5 9.6-9.6C17.8 16.4 21 12.6 26 11' stroke='%236FBF8B' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3Ccircle cx='26' cy='11' r='3.6' fill='%23E8543A'/%3E%3C/svg%3E">
+
+<link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="css/landing.css">
+</head>
+<body class="lp">
+
+<!-- ======================================================================
+     DIRECTION CONTRACT  (DESIGN.md carries the full system)
+
+     THESIS     A credit portfolio drawn as terrain, at editorial scale. It
+                refuses the dashboard default of a metric-tile row above a grid
+                of equal-weight chart cards.
+     OWN-WORLD  Pale map sheet to deep forest, five greens rising with density,
+                honey / coral / teal earned only where risk or interaction is;
+                contour isolines as the only ornament; Instrument Serif for
+                statements, Proxima Nova for interface and every figure.
+     STORY      The reader understands that Headroom answers a different
+                question from the dashboard they already have, sees the
+                mechanism demonstrated on one real customer, and believes the
+                proof because the failures are published too.
+     FIRST      A dark full-bleed field of the product's own terrain under a
+     VIEWPORT   single scanning light. One statement in Instrument Serif at
+                display scale, one lede, one solid action beside one quiet link,
+                and a rule of three plain promises.
+     FORM       Topographic survey sheet; grounded candidate 5 of 7; seed key
+                0300b579. Challengers routed with donations: Crouwel's visible
+                measurement graticule, Labanotation's "length is duration", the
+                gate board's lit-and-moving row.
+     FINISH     unreviewed and undocumented is unfinished; this build ends with
+                the finish review, the verdict, DESIGN.md, and every shipping
+                raster carrying its provenance.
+     ====================================================================== -->
+
+<!-- ------------------------------------------------------------------ nav -->
+<nav class="lp-nav" id="lpNav" aria-label="Primary">
+  <a class="lp-nav-brand" href="#top" aria-label="Headroom, home">
+    <span class="lp-nav-mark" aria-hidden="true">
+      <svg viewBox="0 0 44 44" fill="none" width="30" height="30">
+        <circle cx="22" cy="22" r="20" stroke="#1F7A4D" stroke-width="1.6" opacity=".26"/>
+        <circle cx="22" cy="22" r="14" stroke="#1F7A4D" stroke-width="1.2" opacity=".44"/>
+        <path d="M6 30.5c4.5-1.6 7.4-5 9.6-9.6C17.8 16.4 21 12.6 26 11" stroke="#1F7A4D" stroke-width="2.8" stroke-linecap="round"/>
+        <circle cx="26" cy="11" r="3.4" fill="#E8543A"/>
+      </svg>
+    </span>
+    <span class="lp-nav-name">Headroom</span>
+  </a>
+  <div class="lp-nav-links" id="lpNavLinks">
+    <a href="#mechanism">The mechanism</a>
+    <a href="#principles">Principles</a>
+    <a href="#modules">Modules</a>
+    <a href="#evidence">Evidence</a>
+    <a href="data-requirements.html">Data request</a>
+  </div>
+  <button class="lp-nav-toggle" type="button" id="lpNavToggle"
+          aria-expanded="false" aria-controls="lpNavLinks" aria-label="Show sections">
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+         stroke-width="1.9" stroke-linecap="round" aria-hidden="true">
+      <path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h16"/>
+    </svg>
+  </button>
+  <a class="lp-btn solid small" href="app.html" style="margin-left:auto">
+    Open the dashboard
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h13"/><path d="M13 6l6 6-6 6"/></svg>
+  </a>
+</nav>
+
+<!-- ----------------------------------------------------------------- hero -->
+<header class="lp-hero" id="top">
+  <div class="lp-hero-field" id="heroField" aria-hidden="true"></div>
+  <div class="lp-hero-scrim" aria-hidden="true"></div>
+  <div class="lp-hero-scan" aria-hidden="true"></div>
+
+  <div class="lp-wrap lp-hero-inner">
+    <h1>Reporting is not warning. <br>Headroom <em>is</em>.</h1>
+    <p class="lp-hero-lede">
+      Jabil&rsquo;s Credit Management Dashboard reports credit exposure as it stands today, faithfully and only
+      as it stands. It cannot say which customer will pass a limit next month, which one is quietly getting
+      worse, or why. Headroom can &mdash; from SAP data Jabil already has, plus public information anyone can read.
+    </p>
+    <div class="lp-hero-actions">
+      <a class="lp-btn light" href="app.html">
+        Open the working prototype
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h13"/><path d="M13 6l6 6-6 6"/></svg>
+      </a>
+      <a class="lp-link" href="#mechanism">
+        See the mechanism
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h13"/><path d="M13 6l6 6-6 6"/></svg>
+      </a>
+    </div>
+    <div class="lp-hero-note">
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v6c0 4.5-3 7.7-7 9-4-1.3-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg> <b>Read-only.</b> Nothing is ever written back to SAP.</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5"/><circle cx="12" cy="16" r=".7" fill="currentColor"/></svg> <b>Advice only.</b> It never changes a limit or holds an order.</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/></svg> <b>Inside Jabil.</b> Customer data never leaves the network.</span>
+    </div>
+  </div>
+</header>
+
+<!-- ---------------------------------------------------------------- stats -->
+<section class="lp-section tight" aria-label="Evidence at a glance">
+  <div class="lp-wrap">
+    <div class="lp-stats">
+      <div class="lp-stat reveal">
+        <div class="lp-stat-fig"><span data-count="46">0</span><span class="unit">%</span></div>
+        <div class="lp-stat-label">of limit breaches caught 30 or more days ahead</div>
+        <p class="lp-stat-note">Measured against the alert rule in use today, which catches 2% on the same 24 months of history.</p>
+      </div>
+      <div class="lp-stat reveal d1">
+        <div class="lp-stat-fig"><span data-count="24">0</span></div>
+        <div class="lp-stat-label">monthly cut-offs in the back-test</div>
+        <p class="lp-stat-note">Each model sees only what was known on its cut-off date, so none of them was ever tested on data it had already seen.</p>
+      </div>
+      <div class="lp-stat reveal d2">
+        <div class="lp-stat-fig"><span data-count="120">0</span></div>
+        <div class="lp-stat-label">customer groups scored every morning</div>
+        <p class="lp-stat-note">Each one judged against its own normal, never against the other customers &mdash; so a small account is never punished by a large one&rsquo;s habits.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ------------------------------------------------------- scroll moment -->
+<section class="lp-section" id="mechanism">
+  <div class="lp-wrap">
+    <h2 class="statement reveal">Scroll, and watch a customer turn.</h2>
+    <p class="lede-lg reveal d1" style="margin-top:20px">
+      This is one real customer from the prototype, followed from a position that looked fine
+      to the morning it stops looking fine. Nothing here is described. It is the product&rsquo;s
+      own forecast, drawn as you read.
+    </p>
+  </div>
+
+  <div class="lp-moment" id="moment">
+    <div class="lp-moment-sticky">
+      <div class="lp-wrap lp-moment-grid">
+        <div class="lp-moment-stage reveal">
+          <div class="lp-moment-chart" id="momentChart"></div>
+          <div class="lp-moment-caption">
+            <span id="momentCaption">Today &mdash; exposure USD 582m against a USD 600m limit</span>
+            <span>Illustrative data</span>
+          </div>
+        </div>
+
+        <ol class="lp-moment-steps" id="momentSteps">
+          <li class="lp-moment-step" data-at="0">
+            <span class="tick"></span>
+            <h3>97% of the limit, and nothing breached.</h3>
+            <p>Customer A holds USD 582m against a USD 600m limit. On a dashboard that reports the position,
+               this is where the story ends. It is where ours starts.</p>
+          </li>
+          <li class="lp-moment-step" data-at="0.3">
+            <span class="tick"></span>
+            <h3>The order book turns the path upward.</h3>
+            <p>Open orders keep landing, and delivered value becomes receivable faster than it is collected.
+               The middle of the forecast rises toward the line on its own.</p>
+          </li>
+          <li class="lp-moment-step" data-at="0.6">
+            <span class="tick"></span>
+            <h3>78% of futures cross it, most likely 23 October.</h3>
+            <p>5,000 simulated futures, each replaying this customer&rsquo;s own payment delays. The shaded band
+               is how sure we are &mdash; it is not a set of options to choose from.</p>
+          </li>
+          <li class="lp-moment-step" data-at="0.88">
+            <span class="tick"></span>
+            <h3>Four reasons, and they add up.</h3>
+            <p>The limit is already 97% used. It pays 18 days later than its own normal. Order intake is up 40%
+               in four weeks. Overdue balances are ageing. An analyst can defend every one of those lines.</p>
+          </li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ----------------------------------------------------------- principles -->
+<section class="lp-section wash" id="principles">
+  <div class="lp-wrap">
+    <h2 class="statement reveal">Advice is not automation. It is the whole design.</h2>
+    <p class="lede-lg reveal d1" style="margin-top:20px;margin-bottom:clamp(28px,3vw,48px)">
+      A credit tool earns its place by what it refuses to do. These four refusals are built into the
+      software, not written into a policy document beside it.
+    </p>
+
+    <div class="lp-pov">
+      <div class="lp-pov-row reveal">
+        <div class="lp-pov-num">01</div>
+        <h3>It reads. It never writes.</h3>
+        <p>Headroom reads from SAP and writes nothing back. No limit is changed, no order is held, no customer
+           is contacted. The connector is read-only by construction, and there is no write path to misuse.</p>
+      </div>
+      <div class="lp-pov-row reveal">
+        <div class="lp-pov-num">02</div>
+        <h3>A number without a reason is not usable.</h3>
+        <p>Every driver adds or removes percentage points, so the reasons on screen always sum to the score.
+           If the tool cannot say why, it does not say the number &mdash; and the model&rsquo;s constants are
+           printed on the screen rather than buried in it.</p>
+      </div>
+      <div class="lp-pov-row reveal">
+        <div class="lp-pov-num">03</div>
+        <h3>Each customer is judged against itself.</h3>
+        <p>A customer paying four days late is behaving normally if four days is its normal. Every measure is
+           compared with that account&rsquo;s own twelve-week baseline, never with a peer group, so size and
+           sector stop standing in for risk.</p>
+      </div>
+      <div class="lp-pov-row reveal">
+        <div class="lp-pov-num">04</div>
+        <h3>Growth is not distress.</h3>
+        <p>A healthy customer can pass its limit while paying perfectly well. Conflating that with trouble is
+           how a credit tool costs a company money, so the two questions are asked separately and
+           <b>Growth</b> is its own zone, with a limit review rather than an order hold.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- -------------------------------------------------------------- modules -->
+<section class="lp-section" id="modules">
+  <div class="lp-wrap">
+    <h2 class="statement reveal">Four modules. One question.</h2>
+    <p class="lede-lg reveal d1" style="margin-top:20px;margin-bottom:clamp(28px,3vw,48px)">
+      Jabil asked for six capabilities. They arrive as four modules, each owned end to end by one person,
+      each answering a different part of the same question: who needs attention, and what should be done.
+    </p>
+
+    <div class="lp-mods">
+      <article class="lp-mod reveal">
+        <div class="lp-mod-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M7 15l4-5 3 3 5-7"/></svg></div>
+        <h3>Exposure forecast</h3>
+        <p>Where exposure is heading over ninety days, and the chance, likely date and size of a limit breach.</p>
+        <div class="ask">Answers <b>predict breaches</b></div>
+      </article>
+      <article class="lp-mod reveal d1">
+        <div class="lp-mod-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2-6 3 12 2.5-6H21"/></svg></div>
+        <h3>Early-warning score</h3>
+        <p>Which customers are deteriorating and staying that way, measured against their own recent behaviour.</p>
+        <div class="ask">Answers <b>risk scores, deterioration</b></div>
+      </article>
+      <article class="lp-mod reveal d2">
+        <div class="lp-mod-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.6"/><path d="M12 12l6-4"/></svg></div>
+        <h3>External radar</h3>
+        <p>Filings, official events, market signals and news tone, matched to the right legal entity before use.</p>
+        <div class="ask">Answers <b>external credit information</b></div>
+      </article>
+      <article class="lp-mod reveal d3">
+        <div class="lp-mod-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4"/><path d="M5 5h12l-2 4 2 4H5"/></svg></div>
+        <h3>Watchlist and reasons</h3>
+        <p>A short ranked list every morning, each name carrying its drivers and one suggested next step.</p>
+        <div class="ask">Answers <b>watchlists, explainability</b></div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ------------------------------------------------------------- evidence -->
+<section class="lp-section wash" id="evidence">
+  <div class="lp-wrap">
+    <div class="lp-evidence">
+      <div>
+        <h2 class="statement reveal">We publish the months where it fails.</h2>
+        <p class="lede-lg reveal d1" style="margin-top:20px">
+          The back-test rolls forward monthly: train on everything known at a cut-off, then test only on the
+          month that follows. A heavier model replaces a simpler one only if it wins on the same months at the
+          same false-alarm rate.
+        </p>
+        <p class="lede-lg reveal d2" style="margin-top:16px">
+          One layer does not clear that bar. The external radar adds a few points, which sits inside the range
+          of the layer below it, so it is marked <em>not proven</em> and kept only for the groups with SEC
+          filings. That result is on the screen, not in a footnote.
+        </p>
+        <div class="lp-hero-actions" style="margin-top:28px">
+          <a class="lp-btn solid" href="app.html#/performance">
+            Read the full back-test
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h13"/><path d="M13 6l6 6-6 6"/></svg>
+          </a>
+        </div>
+      </div>
+      <div class="reveal d1" style="background:#fff;border-radius:16px;box-shadow:var(--e2);padding:clamp(18px,2vw,28px)">
+        <div id="ladderChart"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ---------------------------------------------------------------- close -->
+<section class="lp-section dark">
+  <div class="lp-wrap lp-close">
+    <h2>See it on your own book.</h2>
+    <p>
+      Everything on this page runs on invented data, generated from a fixed seed so the demonstration is
+      reproducible. The data request sets out exactly what a real deployment would need &mdash; field by field,
+      source by source, with a date and a fallback for each item.
+    </p>
+    <div class="lp-close-actions">
+      <a class="lp-btn light" href="data-requirements.html">
+        Read the data request
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h13"/><path d="M13 6l6 6-6 6"/></svg>
+      </a>
+      <a class="lp-btn ghost" href="app.html">Open the dashboard</a>
+    </div>
+  </div>
+</section>
+
+<!-- --------------------------------------------------------------- footer -->
+<footer class="lp-foot">
+  <div class="lp-wrap">
+    <div class="lp-foot-grid">
+      <div>
+        <div class="lp-foot-brand">
+          <span aria-hidden="true">
+            <svg viewBox="0 0 44 44" fill="none" width="26" height="26">
+              <circle cx="22" cy="22" r="20" stroke="#6FBF8B" stroke-width="1.6" opacity=".4"/>
+              <path d="M6 30.5c4.5-1.6 7.4-5 9.6-9.6C17.8 16.4 21 12.6 26 11" stroke="#6FBF8B" stroke-width="2.8" stroke-linecap="round"/>
+              <circle cx="26" cy="11" r="3.4" fill="#E8543A"/>
+            </svg>
+          </span>
+          <span>Headroom</span>
+        </div>
+        <p style="max-width:34ch;line-height:1.6">
+          An advanced Credit Management Dashboard proposed for Jabil. Project IND2620-0011.
+        </p>
+      </div>
+      <div>
+        <h3 class="lp-foot-h">The prototype</h3>
+        <a href="app.html">Portfolio</a>
+        <a href="app.html#/customers">Customers</a>
+        <a href="app.html#/radar">External radar</a>
+        <a href="app.html#/performance">Model performance</a>
+        <a href="app.html#/methodology">Methodology</a>
+      </div>
+      <div>
+        <h3 class="lp-foot-h">The documents</h3>
+        <a href="data-requirements.html">Data request to Jabil</a>
+        <a href="selftest.html">Self-test (112 checks)</a>
+        <a href="README.md">README</a>
+      </div>
+    </div>
+    <div class="lp-foot-rule">
+      <span>MSc Smart Industries and Digital Transformation, National University of Singapore.</span>
+      <span>Every customer and figure shown is invented.</span>
+    </div>
+  </div>
+</footer>
+
+<!-- Load order: core defines the toolkit, data the portfolio, engine the models,
+     terrain and charts the drawing, landing the scroll work. -->
+<script src="js/core.js"></script>
+<script src="js/data.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/terrain.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/landing.js"></script>
+</body>
+</html>

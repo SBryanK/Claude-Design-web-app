@@ -1,0 +1,389 @@
+/* ============================================================================
+   Headroom — landing page
+
+   Same world as the dashboard (a topographic survey sheet), paced like the
+   reference the client pinned: a cinematic dark opening, statements set in a
+   high-contrast display serif at editorial scale, proof stated as three figures,
+   and one authored scroll moment that demonstrates the mechanism rather than
+   describing it.
+
+   Deliberately: no eyebrow labels above headings, no metric tiles, no glass,
+   no gradient text, no scroll-jacking. The scroll moment is scroll-LINKED, so
+   the reader always keeps control of the page.
+   ========================================================================== */
+
+/* ---------------------------------------------------------------- shell --- */
+
+.lp { background: var(--land-0); overflow-x: clip; }
+.lp-wrap { max-width: 1340px; margin: 0 auto; padding: 0 clamp(20px, 4vw, 48px); }
+
+/* Section rhythm is generous and fluid — this surface paces like a magazine. */
+.lp-section { padding: clamp(56px, 5vw + 24px, 144px) 0; }
+.lp-section.tight { padding: clamp(48px, 3vw + 24px, 88px) 0; }
+.lp-section.dark { background: var(--forest-ink); color: #D6EEE0; }
+.lp-section.dark h2, .lp-section.dark h3 { color: #FFFFFF; }
+.lp-section.wash { background: var(--land-1); }
+
+/* --------------------------------------------------------------- display -- */
+
+.display {
+  font-family: var(--font-display); font-weight: 400;
+  letter-spacing: -.018em; line-height: 1.0;
+}
+h2.statement {
+  font-family: var(--font-display); font-weight: 400;
+  font-size: clamp(2.25rem, 1.5rem + 3.2vw, 4rem);
+  line-height: 1.04; letter-spacing: -.015em;
+  color: var(--forest-ink); max-width: 20ch;
+}
+.lp-section.dark h2.statement { color: #FFFFFF; }
+p.lede-lg {
+  font-size: clamp(1.0625rem, .98rem + .45vw, 1.375rem);
+  line-height: 1.55; color: var(--muted); max-width: 60ch;
+}
+.lp-section.dark p.lede-lg { color: rgba(214, 238, 224, .78); }
+
+/* -------------------------------------------------------------- top nav --- */
+
+.lp-nav {
+  position: fixed; top: 14px; left: 50%; transform: translateX(-50%);
+  z-index: 50; width: min(1340px, calc(100vw - 28px));
+  display: flex; align-items: center; gap: var(--s5);
+  padding: 9px 9px 9px 18px; border-radius: var(--r-pill);
+  background: rgba(255, 255, 255, .94);
+  box-shadow: var(--e2);
+  transition: box-shadow var(--dur-3) var(--ease-out), background var(--dur-3) var(--ease-out);
+}
+.lp-nav.solid { background: #FFFFFF; box-shadow: var(--e3); }
+.lp-nav-brand { display: flex; align-items: center; gap: 10px; }
+.lp-nav-mark { width: 30px; height: 30px; flex: 0 0 30px; }
+.lp-nav-name { font-family: var(--font-display); font-size: 21px; color: var(--forest-ink); letter-spacing: -.01em; }
+.lp-nav-links { display: flex; gap: var(--s5); margin-left: auto; }
+.lp-nav-links a {
+  font-size: 13.5px; font-weight: 500; color: var(--forest);
+  text-decoration: none; transition: color var(--dur-2) var(--ease-out);
+}
+.lp-nav-links a:hover { color: var(--forest-deep); }
+.lp-nav-toggle {
+  display: none; margin-left: auto;
+  width: 40px; height: 40px; border-radius: var(--r-pill);
+  align-items: center; justify-content: center;
+  color: var(--forest-deep); background: var(--land-1);
+  transition: background var(--dur-2) var(--ease-out);
+}
+.lp-nav-toggle:hover { background: var(--land-2); }
+
+/* Below the fold-width the links become a panel rather than vanishing. Nothing
+   is unreachable on a phone. */
+@media (max-width: 900px) {
+  .lp-nav { flex-wrap: wrap; border-radius: var(--r-lg); padding: 9px; }
+  .lp-nav-toggle { display: inline-flex; }
+  .lp-nav > .lp-btn.solid { margin-left: 0 !important; }
+  .lp-nav-links {
+    order: 3; flex-basis: 100%; flex-direction: column; gap: 0;
+    margin: 9px 0 3px; padding-top: 6px; border-top: 1px solid var(--line);
+    display: none;
+  }
+  /* An open menu sits over the hero, so the bar has to stop being translucent
+     or the headline ghosts through the links. */
+  .lp-nav.open { background: #FFFFFF; box-shadow: var(--e3); }
+  .lp-nav.open .lp-nav-links { display: flex; }
+  .lp-nav-links a { padding: 11px 6px; font-size: 15px; }
+  .lp-nav-links a + a { border-top: 1px solid var(--line); }
+}
+/* Forced display line breaks are a desktop device; on a narrow screen the
+   sentence wraps on its own. */
+@media (max-width: 720px) { .lp-hero h1 br { display: none; } }
+
+/* ------------------------------------------------------------ the button -- */
+
+.lp-btn {
+  display: inline-flex; align-items: center; gap: 9px;
+  padding: 13px 24px; border-radius: var(--r-pill);
+  font-size: 14px; font-weight: 600; text-decoration: none;
+  border: 1px solid transparent; cursor: pointer;
+  transition: background-color var(--dur-2) var(--ease-out),
+              border-color var(--dur-2) var(--ease-out),
+              color var(--dur-2) var(--ease-out),
+              transform var(--dur-1) var(--ease-out);
+}
+.lp-btn:active { transform: translateY(1px); }
+.lp-btn svg { width: 16px; height: 16px; transition: transform var(--dur-2) var(--ease-out); }
+.lp-btn:hover svg { transform: translateX(3px); }
+
+.lp-btn.solid { background: var(--forest-ink); color: #FFFFFF; }
+.lp-btn.solid:hover { background: var(--forest); }
+.lp-btn.light { background: #FFFFFF; color: var(--forest-ink); }
+.lp-btn.light:hover { background: var(--land-2); }
+.lp-btn.ghost { background: transparent; color: #FFFFFF; border-color: rgba(255,255,255,.34); }
+.lp-btn.ghost:hover { border-color: rgba(255,255,255,.7); background: rgba(255,255,255,.07); }
+.lp-btn.small { padding: 9px 18px; font-size: 13px; }
+
+/* A quiet second action, set as a link rather than a second button. */
+.lp-link {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 14px; font-weight: 600; color: #FFFFFF; text-decoration: none;
+  padding: 13px 4px;
+}
+.lp-link svg { width: 15px; height: 15px; transition: transform var(--dur-2) var(--ease-out); }
+.lp-link:hover svg { transform: translateX(4px); }
+
+/* ----------------------------------------------------------------- hero --- */
+
+.lp-hero {
+  position: relative; min-height: min(96vh, 980px);
+  display: flex; align-items: center;
+  background: var(--forest-ink); color: #FFFFFF; overflow: hidden;
+  padding-bottom: clamp(40px, 4vw, 72px);
+  padding-top: clamp(120px, 12vh, 170px);
+}
+/* The terrain, after dark. It is the product's own field, not a stock image. */
+.lp-hero-field {
+  position: absolute; inset: 0; opacity: .78;
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 62%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 0%, #000 62%, transparent 100%);
+}
+.lp-hero-field svg { height: 100%; width: 100%; }
+.lp-hero-scrim {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(96% 78% at 4% 52%, rgba(10,53,33,.96) 0%, rgba(10,53,33,.72) 42%, rgba(10,53,33,0) 74%),
+    linear-gradient(180deg, rgba(10,53,33,.88) 0%, rgba(10,53,33,.30) 38%, rgba(10,53,33,.74) 100%);
+}
+/* One authored ambient moment: a slow scan crossing the field, the way a
+   survey instrument sweeps the ground it is measuring. */
+.lp-hero-scan {
+  position: absolute; top: 0; bottom: 0; width: 38%;
+  background: linear-gradient(90deg, transparent 0%, rgba(111,191,139,.14) 45%, rgba(155,226,186,.22) 50%, rgba(111,191,139,.14) 55%, transparent 100%);
+  animation: heroScan 9s var(--ease-inout) infinite;
+  pointer-events: none;
+}
+@keyframes heroScan {
+  0%   { transform: translateX(-40%); opacity: 0; }
+  12%  { opacity: 1; }
+  88%  { opacity: 1; }
+  100% { transform: translateX(280%); opacity: 0; }
+}
+.lp-hero-inner { position: relative; z-index: 2; width: 100%; }
+
+.lp-hero h1 {
+  font-family: var(--font-display); font-weight: 400;
+  font-size: clamp(2.125rem, 1.1rem + 5.2vw, 5.5rem);
+  line-height: 1.03; letter-spacing: -.02em; color: #FFFFFF;
+  max-width: 14em; margin: 0; overflow-wrap: break-word;
+}
+.lp-hero h1 em { font-style: italic; color: #9BE2BA; }
+.lp-hero-lede {
+  margin-top: clamp(18px, 2vw, 28px);
+  font-size: clamp(1rem, .94rem + .4vw, 1.25rem);
+  line-height: 1.6; color: rgba(226, 244, 233, .82); max-width: 54ch;
+}
+.lp-hero-actions {
+  display: flex; align-items: center; gap: clamp(14px, 2vw, 30px);
+  flex-wrap: wrap; margin-top: clamp(26px, 3vw, 42px);
+}
+.lp-hero-note {
+  margin-top: clamp(26px, 3vw, 40px); padding-top: var(--s5);
+  border-top: 1px solid rgba(255,255,255,.14);
+  display: flex; gap: clamp(16px, 3vw, 40px); flex-wrap: wrap;
+  font-size: 12.5px; color: rgba(214,238,224,.62);
+}
+.lp-hero-note b { color: #FFFFFF; font-weight: 600; }
+.lp-hero-note span { display: inline-flex; align-items: center; gap: 7px; }
+.lp-hero-note svg { width: 14px; height: 14px; color: #6FBF8B; }
+
+/* ---------------------------------------------------------------- stats --- */
+
+/* Three figures, set in the display serif at a scale that makes them the
+   argument rather than a decoration. The unit is smaller and tinted, the way a
+   measurement is written beside its value. */
+.lp-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 860px) { .lp-stats { grid-template-columns: minmax(0, 1fr); } }
+.lp-stat { padding: clamp(28px, 3vw, 44px) clamp(20px, 2.6vw, 44px) clamp(28px, 3vw, 44px) 0; }
+.lp-stat + .lp-stat { border-left: 1px solid var(--line); padding-left: clamp(24px, 3vw, 48px); }
+@media (max-width: 860px) {
+  .lp-stat + .lp-stat { border-left: none; border-top: 1px solid var(--line); padding-left: 0; }
+}
+.lp-stat-fig {
+  font-family: var(--font-display); font-weight: 400;
+  font-size: clamp(3.25rem, 2rem + 4.6vw, 5.75rem);
+  line-height: .92; letter-spacing: -.03em; color: var(--forest-ink);
+  display: flex; align-items: baseline; gap: 2px;
+}
+.lp-stat-fig .unit {
+  font-size: .42em; letter-spacing: 0;
+  color: var(--teal); transform: translateY(-.18em);
+}
+.lp-stat-fig .unit.risk { color: var(--coral-ink); }
+.lp-stat-label {
+  margin-top: clamp(14px, 1.6vw, 22px);
+  font-size: 14.5px; font-weight: 600; color: var(--forest-ink);
+  max-width: 26ch; line-height: 1.4;
+}
+.lp-stat-note {
+  margin-top: 9px; font-size: 13px; line-height: 1.55;
+  color: var(--muted); max-width: 38ch;
+}
+
+/* ----------------------------------------------------- scroll moment ----- */
+
+.lp-moment { position: relative; }
+.lp-moment-sticky {
+  position: sticky; top: 0; min-height: 100vh;
+  display: flex; align-items: center; padding: 96px 0;
+}
+.lp-moment-grid {
+  display: grid; grid-template-columns: minmax(0, 1fr) 340px;
+  gap: clamp(28px, 4vw, 64px); align-items: center; width: 100%;
+}
+@media (max-width: 1080px) { .lp-moment-grid { grid-template-columns: minmax(0, 1fr); } }
+
+.lp-moment-stage {
+  position: relative; min-width: 0; background: #FFFFFF; border-radius: var(--r-lg);
+  box-shadow: var(--e2); padding: clamp(16px, 2vw, 28px);
+}
+.lp-moment-chart {
+  min-width: 0;
+  /* Revealed with clip-path — one property, no layout, so the reveal never
+     competes with the drawing it is revealing. Falls back to fully visible
+     wherever clip-path is unsupported. */
+  clip-path: inset(0 0 0 0);
+}
+.lp-moment-steps { display: flex; flex-direction: column; gap: var(--s5); }
+.lp-moment-step { opacity: .32; transition: opacity var(--dur-4) var(--ease-out); }
+.lp-moment-step.on { opacity: 1; }
+.lp-moment-step h3 {
+  font-family: var(--font-display); font-weight: 400;
+  font-size: clamp(1.25rem, 1.05rem + .8vw, 1.75rem);
+  line-height: 1.1; color: var(--forest-ink);
+}
+.lp-moment-step p { margin-top: 7px; font-size: 13.5px; line-height: 1.55; color: var(--muted); }
+.lp-moment-step .tick {
+  display: block; width: 44px; height: 2px; background: var(--line-2);
+  margin-bottom: var(--s3); transform-origin: left center; transform: scaleX(.59);
+  transition: background var(--dur-3) var(--ease-out), transform var(--dur-3) var(--ease-out);
+}
+.lp-moment-step.on .tick { background: var(--teal); transform: scaleX(1); }
+.lp-moment-caption {
+  margin-top: var(--s4); font-size: 12px; color: var(--faint);
+  display: flex; justify-content: space-between; gap: var(--s4); flex-wrap: wrap;
+}
+
+/* ------------------------------------------------------------ pov list --- */
+
+.lp-pov { display: flex; flex-direction: column; }
+.lp-pov-row {
+  display: grid; grid-template-columns: 64px minmax(0, 1fr) minmax(0, 1.15fr);
+  gap: clamp(20px, 3vw, 56px); align-items: start;
+  padding: clamp(26px, 3vw, 40px) 0; border-top: 1px solid var(--line);
+}
+.lp-pov-row:last-child { border-bottom: 1px solid var(--line); }
+@media (max-width: 860px) { .lp-pov-row { grid-template-columns: 40px minmax(0, 1fr); } .lp-pov-row p { grid-column: 2; } }
+.lp-pov-num {
+  font-family: var(--font-display); font-size: 21px; color: var(--faint);
+  line-height: 1.2; font-variant-numeric: tabular-nums;
+}
+.lp-pov-row h3 {
+  font-family: var(--font-display); font-weight: 400;
+  font-size: clamp(1.375rem, 1.1rem + 1.1vw, 2rem);
+  line-height: 1.08; color: var(--forest-ink); max-width: 22ch;
+}
+.lp-pov-row p { font-size: 14.5px; line-height: 1.6; color: var(--muted); max-width: 52ch; }
+
+/* -------------------------------------------------------------- modules -- */
+
+.lp-mods { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s4); }
+@media (max-width: 1100px) { .lp-mods { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 620px) { .lp-mods { grid-template-columns: minmax(0, 1fr); } }
+.lp-mod {
+  background: #FFFFFF; border-radius: var(--r-lg); padding: var(--s6);
+  box-shadow: var(--e2); display: flex; flex-direction: column;
+  transition: transform var(--dur-3) var(--ease-out), box-shadow var(--dur-3) var(--ease-out);
+}
+.lp-mod:hover { transform: translateY(-3px); box-shadow: var(--e3); }
+.lp-mod-ico {
+  width: 38px; height: 38px; border-radius: var(--r-sm);
+  background: var(--land-1); color: var(--forest);
+  display: grid; place-items: center; margin-bottom: var(--s5);
+}
+.lp-mod h3 {
+  font-family: var(--font-display); font-weight: 400; font-size: 1.375rem;
+  line-height: 1.1; color: var(--forest-ink); margin-bottom: var(--s3);
+}
+.lp-mod p { font-size: 13.5px; line-height: 1.55; color: var(--muted); }
+.lp-mod .ask {
+  margin-top: auto; padding-top: var(--s5);
+  font-size: 12px; color: var(--faint);
+}
+.lp-mod .ask b { color: var(--forest); font-weight: 600; }
+
+/* ------------------------------------------------------------- evidence -- */
+
+.lp-evidence { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: clamp(28px, 4vw, 64px); align-items: center; }
+@media (max-width: 980px) { .lp-evidence { grid-template-columns: minmax(0, 1fr); } }
+
+/* --------------------------------------------------------------- closer -- */
+
+.lp-close { text-align: center; }
+.lp-close h2 {
+  font-family: var(--font-display); font-weight: 400;
+  font-size: clamp(2.125rem, 1.3rem + 4.6vw, 5rem);
+  line-height: 1.0; letter-spacing: -.02em; color: #FFFFFF; margin: 0 auto;
+  max-width: 18ch;
+}
+.lp-close p { margin: clamp(20px, 2.4vw, 30px) auto 0; max-width: 52ch; font-size: clamp(1rem, .95rem + .35vw, 1.1875rem); line-height: 1.6; color: rgba(214,238,224,.76); }
+.lp-close-actions { display: flex; gap: var(--s4); justify-content: center; flex-wrap: wrap; margin-top: clamp(28px, 3vw, 42px); }
+
+/* --------------------------------------------------------------- footer -- */
+
+.lp-foot { background: var(--forest-ink); color: rgba(214,238,224,.62); padding: clamp(40px, 4vw, 64px) 0 40px; font-size: 13px; }
+.lp-foot-grid { display: grid; grid-template-columns: minmax(0,1.4fr) repeat(2, minmax(0,1fr)); gap: var(--s7); }
+@media (max-width: 780px) { .lp-foot-grid { grid-template-columns: minmax(0, 1fr); } }
+.lp-foot-h { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: rgba(214,238,224,.68); margin-bottom: var(--s3); font-weight: 600; }
+.lp-foot a { color: rgba(214,238,224,.78); text-decoration: none; display: block; padding: 3px 0; }
+.lp-foot a:hover { color: #FFFFFF; }
+.lp-foot-brand { display: flex; align-items: center; gap: 10px; margin-bottom: var(--s3); }
+.lp-foot-brand span { font-family: var(--font-display); font-size: 22px; color: #FFFFFF; }
+.lp-foot-rule { border-top: 1px solid rgba(255,255,255,.12); margin-top: var(--s7); padding-top: var(--s5); display: flex; justify-content: space-between; gap: var(--s5); flex-wrap: wrap; }
+
+/* ------------------------------------------------------------ reveals ---- */
+
+/* Content is visible by default and only lifts when the observer is running, so
+   a disabled or unsupported script never hides the page. */
+.js-reveal .reveal { opacity: 0; transform: translateY(18px); }
+.js-reveal .reveal.in {
+  opacity: 1; transform: none;
+  transition: opacity 700ms var(--ease-out), transform 700ms var(--ease-out);
+}
+.reveal.d1.in { transition-delay: 80ms; }
+.reveal.d2.in { transition-delay: 160ms; }
+.reveal.d3.in { transition-delay: 240ms; }
+
+/* `?static` on the URL settles every entrance state immediately: reveals shown,
+   counters at their final figure, the chart revealed whole, the sticky section
+   released to its natural height. Used for screenshots, for printing, and by
+   anyone who would rather read than watch. */
+.lp-static .reveal { opacity: 1 !important; transform: none !important; }
+.lp-static .lp-hero-scan { display: none; }
+.lp-static .lp-moment-sticky { position: static; min-height: 0; padding: 56px 0; }
+.lp-static .lp-moment-chart { clip-path: none !important; }
+.lp-static .lp-moment-step { opacity: 1 !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-hero-scan { display: none; }
+  .js-reveal .reveal { opacity: 1; transform: none; }
+  .lp-moment-chart { clip-path: none !important; }
+}
+
+/* --------------------------------------------------------------- print --- */
+
+@media print {
+  .lp-nav, .lp-hero-scan { display: none !important; }
+  .lp-hero { min-height: 0; background: #fff; color: #000; padding: 24px 0; }
+  .lp-hero h1, .lp-close h2 { color: #0E4A2F; }
+  .lp-hero-lede, .lp-hero-note { color: #333; }
+  .lp-section { padding: 20px 0; break-inside: avoid; }
+  .lp-section.dark, .lp-foot { background: #fff; color: #000; }
+  .lp-moment-sticky { position: static; min-height: 0; }
+  .lp-moment-chart { clip-path: none !important; }
+}

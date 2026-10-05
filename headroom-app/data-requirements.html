@@ -1,0 +1,1741 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Headroom — data requirements for Jabil (IND2620-0011)</title>
+<meta name="description" content="What data Headroom needs from Jabil, why, where it comes from, how it connects, and what Jabil must provide. NUS MSc capstone, project IND2620-0011.">
+<style>
+/* ==========================================================================
+   Headroom — data requirements
+   Standalone document. No build step, no network calls, no frameworks.
+   Design world: organic topographic map. Light ground, contour geometry.
+   ========================================================================== */
+
+@font-face{font-family:"Hanken Grotesk";src:url("fonts/hanken-grotesk-400.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:"Hanken Grotesk";src:url("fonts/hanken-grotesk-500.woff2") format("woff2");font-weight:500;font-style:normal;font-display:swap}
+@font-face{font-family:"Hanken Grotesk";src:url("fonts/hanken-grotesk-600.woff2") format("woff2");font-weight:600;font-style:normal;font-display:swap}
+@font-face{font-family:"Hanken Grotesk";src:url("fonts/hanken-grotesk-700.woff2") format("woff2");font-weight:700;font-style:normal;font-display:swap}
+
+:root{
+  --land-0:#FBFDF9;  --land-1:#EAF6EC;  --land-2:#D3EDD8;  --land-3:#B5E0BE;
+  --ridge:#6FBF8B;   --forest:#1F7A4D; --forest-deep:#0E4A2F;
+  --contour:#8CC0A0; --contour-soft:#CFE7D8;
+  --honey:#E08A00;   --honey-soft:#FDF0D6;
+  --coral:#E8543A;   --coral-soft:#FFE4DC;
+  --teal:#0E9E93;    --teal-soft:#D4F1EE;
+  --ink:#10261C;     --muted:#5A6E62; --line:#DCEBE0;
+
+  /* Derived tints. Every one is a contrast-checked version of a token above,
+     used where text sits on a tinted surface. */
+  --muted-deep:#46584D;   /* 5.7:1 on --land-2 */
+  --honey-ink:#7A4A00;    /* 6.6:1 on --honey-soft */
+  --coral-ink:#9E2A15;    /* 6.2:1 on --coral-soft */
+  --teal-ink:#0A5F58;     /* 6.3:1 on --teal-soft */
+  --coral-deep:#B93A22;   /* 5.7:1 with white text */
+
+  --r-card:14px; --r-inner:12px; --r-ctl:10px;
+  --wrap:1160px;
+  --font-ui:"Proxima Nova","Proxima Nova Alt","Hanken Grotesk",Montserrat,-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+  --font-mono:"SF Mono",ui-monospace,Menlo,Consolas,"Liberation Mono",monospace;
+  --shadow-soft:0 1px 2px rgba(16,38,28,.04), 0 8px 20px rgba(16,38,28,.06);
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth;scrollbar-color:var(--contour) var(--land-1);scrollbar-width:thin}
+body{
+  margin:0;background:var(--land-0);color:var(--ink);
+  font-family:var(--font-ui);font-size:16px;line-height:1.62;
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
+}
+::selection{background:var(--land-3);color:var(--forest-deep)}
+:focus-visible{outline:2.5px solid var(--forest);outline-offset:2px;border-radius:6px}
+::-webkit-scrollbar{width:12px;height:12px}
+::-webkit-scrollbar-track{background:var(--land-1)}
+::-webkit-scrollbar-thumb{background:var(--contour);border:3px solid var(--land-1);border-radius:8px}
+::-webkit-scrollbar-thumb:hover{background:var(--ridge)}
+
+[hidden]{display:none!important}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.sprite{position:absolute;width:0;height:0;overflow:hidden}
+.wrap{max-width:var(--wrap);margin-inline:auto;padding-inline:clamp(16px,3.2vw,34px)}
+
+/* ------------------------------------------------------------- typography */
+h1,h2,h3,h4{font-family:var(--font-ui);color:var(--forest-deep);font-weight:700}
+h1{font-size:clamp(30px,4.2vw,46px);line-height:1.08;letter-spacing:-0.032em;margin:0 0 16px;max-width:24ch;color:var(--ink)}
+h2{font-size:clamp(21px,2.5vw,28px);line-height:1.2;letter-spacing:-0.02em;margin:56px 0 12px}
+h3{font-size:18.5px;line-height:1.3;letter-spacing:-0.012em;margin:38px 0 8px;font-weight:600}
+h4{font-size:16px;margin:26px 0 6px;font-weight:600;color:var(--forest-deep)}
+p,li{max-width:72ch}
+p{margin:0 0 14px}
+ul,ol{margin:0 0 16px;padding-left:1.15em}
+li{margin-bottom:7px}
+li::marker{color:var(--ridge)}
+strong{font-weight:600;color:var(--forest-deep)}
+a{color:var(--forest);text-underline-offset:2px}
+a:hover{color:var(--forest-deep)}
+code,kbd{font-family:var(--font-mono);font-size:.87em;background:var(--land-1);border:1px solid var(--line);border-radius:5px;padding:1px 5px;color:var(--forest-deep)}
+.lede{font-size:clamp(17px,1.5vw,19.5px);line-height:1.55;color:var(--muted-deep);max-width:64ch;margin-bottom:18px}
+.small{font-size:14px;color:var(--muted-deep);max-width:76ch}
+.num{font-variant-numeric:tabular-nums}
+
+/* ---------------------------------------------------------------- masthead */
+.masthead{position:relative;overflow:hidden;background:var(--land-1);border-bottom:1px solid var(--line)}
+.masthead .topo{position:absolute;inset:0;width:100%;height:100%;display:block;opacity:.62;color:var(--contour)}
+.masthead-inner{position:relative;z-index:1;padding-block:clamp(38px,5.6vw,62px) clamp(30px,4vw,46px)}
+.masthead h1{max-width:20ch}
+.meta{display:flex;flex-wrap:wrap;gap:8px;margin:22px 0 0;padding:0;list-style:none}
+.meta li{font-size:13.5px;font-weight:600;color:var(--forest-deep);background:var(--land-0);border:1px solid var(--contour-soft);border-radius:6px;padding:4px 10px;margin:0;max-width:none}
+.rule-topo{display:block;width:100%;height:60px;color:var(--contour);opacity:.55}
+
+/* ------------------------------------------------------------------- tabs */
+.nav{position:sticky;top:0;z-index:30;background:var(--land-0);border-bottom:1px solid var(--line)}
+.nav-inner{display:flex;align-items:center;gap:18px;flex-wrap:wrap;padding-block:9px}
+.brand{display:flex;align-items:center;gap:9px;font-weight:700;letter-spacing:-0.02em;color:var(--forest-deep);font-size:15.5px;text-decoration:none;padding:4px 2px;white-space:nowrap}
+.brand svg{width:22px;height:22px;color:var(--forest)}
+.brand span{font-weight:500;color:var(--muted-deep);font-size:13px}
+.tablist{display:flex;gap:4px;margin-left:auto;overflow-x:auto;padding:3px 0;scrollbar-width:thin}
+.tab{
+  appearance:none;border:1px solid transparent;background:transparent;color:var(--muted-deep);
+  font:inherit;font-size:14.5px;font-weight:600;line-height:1;padding:9px 13px;border-radius:var(--r-ctl);
+  cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:8px;
+}
+.tab svg{width:17px;height:17px;flex:none}
+.tab:hover{background:var(--land-1);color:var(--forest-deep)}
+.tab[aria-selected="true"]{background:var(--forest);border-color:var(--forest);color:#fff}
+.tab[aria-selected="true"] svg{color:#fff}
+
+/* ------------------------------------------------------------------ cards */
+.card{background:#fff;border:1px solid var(--line);border-radius:var(--r-card);padding:20px 22px}
+.card.float{border:0;box-shadow:var(--shadow-soft)}
+.card + .card{margin-top:16px}
+.card h3{margin-top:0}
+.grid{display:grid;gap:16px}
+.grid-2{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.grid-3{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.stack{display:grid;gap:14px}
+
+/* --------------------------------------------------------------- callouts */
+.callout{border:1px solid var(--line);border-radius:var(--r-card);padding:18px 20px;background:var(--land-1);color:var(--forest-deep);margin:20px 0}
+.callout h3,.callout h4{margin-top:0;color:inherit}
+.callout p,.callout li{color:inherit}
+.callout .ico{width:20px;height:20px;flex:none;margin-top:3px}
+.callout-head{display:flex;gap:11px;align-items:flex-start}
+.callout-honey{background:var(--honey-soft);color:var(--honey-ink);border-color:#EFD9AE}
+.callout-coral{background:var(--coral-soft);color:var(--coral-ink);border-color:#F6C9BC}
+.callout-teal{background:var(--teal-soft);color:var(--teal-ink);border-color:#B4E2DD}
+.callout-forest{background:var(--land-2);color:var(--forest-deep);border-color:var(--land-3)}
+.callout .small{color:inherit;opacity:.92}
+
+/* ---------------------------------------------------------------- summary */
+.summary{background:var(--land-2);border:1px solid var(--land-3);border-radius:var(--r-card);padding:22px 24px;margin:26px 0 8px}
+.summary h2{margin:0 0 4px;font-size:21px}
+.summary-grid{display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));margin-top:14px}
+.summary-item{background:var(--land-0);border:1px solid var(--contour-soft);border-radius:var(--r-inner);padding:14px 16px}
+.summary-item h3{margin:0 0 6px;font-size:15px;letter-spacing:0;color:var(--forest-deep)}
+.summary-item p{margin:0;font-size:14.5px;color:var(--forest-deep);max-width:none}
+.summary .note{margin:16px 0 0;font-size:14px;color:var(--forest-deep);max-width:80ch}
+
+/* ----------------------------------------------------------------- tables */
+.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r-card);background:#fff;margin:14px 0 8px}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+caption{text-align:left;padding:14px 16px 0;font-size:14px;color:var(--muted-deep);caption-side:top}
+th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top;font-size:14.5px}
+thead th{background:var(--land-1);color:var(--forest-deep);font-weight:600;font-size:13.5px;letter-spacing:-0.005em;white-space:nowrap;position:relative;z-index:0}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:hover{background:var(--land-0)}
+td.wide{min-width:280px}
+td.mid{min-width:180px}
+.tnum{font-variant-numeric:tabular-nums}
+tr.row-required td{background:#EDF8F0}
+tr.row-required td:first-child{font-weight:600}
+.nowrap{white-space:nowrap}
+
+/* ------------------------------------------------------------------- tags */
+.tag{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;font-size:12.5px;font-weight:700;line-height:1;vertical-align:-5px}
+.tag-b{background:var(--forest);color:#fff}
+.tag-c{background:var(--honey);color:var(--ink)}
+.tag-p{background:var(--teal);color:var(--ink)}
+.tag-n{background:var(--coral-deep);color:#fff}
+.legend{display:flex;flex-wrap:wrap;gap:10px 22px;padding:0;margin:14px 0 4px;list-style:none}
+.legend li{display:flex;gap:9px;align-items:flex-start;font-size:14px;color:var(--muted-deep);margin:0;max-width:38ch}
+.legend b{color:var(--forest-deep)}
+
+.pri{display:inline-block;font-size:12.5px;font-weight:600;border-radius:6px;padding:3px 9px;white-space:nowrap}
+.pri-req{background:var(--land-2);color:var(--forest-deep)}
+.pri-need{background:var(--honey-soft);color:var(--honey-ink)}
+.pri-nice{background:var(--land-1);color:var(--muted-deep)}
+.cost{display:inline-block;font-size:12.5px;font-weight:600;border-radius:6px;padding:3px 9px}
+.cost-free{background:var(--land-2);color:var(--forest-deep)}
+.cost-paid{background:var(--honey-soft);color:var(--honey-ink)}
+.cost-mixed{background:var(--teal-soft);color:var(--teal-ink)}
+
+/* ---------------------------------------------------------------- controls */
+.toolbar{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:18px 0 12px}
+.search{position:relative;flex:1 1 280px;max-width:420px}
+.search svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--muted);pointer-events:none}
+.search input{
+  width:100%;font:inherit;font-size:15px;color:var(--ink);background:#fff;
+  border:1px solid var(--contour);border-radius:var(--r-ctl);padding:10px 12px 10px 38px;
+}
+.search input::placeholder{color:var(--muted)}
+.search input:focus{border-color:var(--forest)}
+.btn{
+  appearance:none;font:inherit;font-size:14px;font-weight:600;line-height:1;cursor:pointer;
+  display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:var(--r-ctl);
+  background:#fff;border:1px solid var(--contour);color:var(--forest-deep);
+}
+.btn:hover{background:var(--land-1);border-color:var(--ridge)}
+.btn svg{width:16px;height:16px}
+.btn[data-done="1"]{background:var(--land-2);border-color:var(--land-3)}
+.count{font-size:13.5px;color:var(--muted-deep);font-variant-numeric:tabular-nums}
+.empty{border:1px dashed var(--ridge);border-radius:var(--r-inner);padding:18px 20px;background:var(--land-1);color:var(--forest-deep);font-size:14.5px;margin:12px 0}
+
+/* --------------------------------------------------------------- external */
+.src{background:#fff;border:1px solid var(--line);border-radius:var(--r-card);padding:18px 20px}
+.src-head{display:flex;flex-wrap:wrap;gap:10px;align-items:baseline;justify-content:space-between}
+.src h3{margin:0;font-size:17px}
+.src .badges{display:flex;gap:8px;flex-wrap:wrap}
+.src dl{margin:12px 0 0;display:grid;gap:8px 18px;grid-template-columns:auto 1fr}
+.src dt{font-size:13px;font-weight:600;color:var(--forest-deep);white-space:nowrap}
+.src dd{margin:0;font-size:14.5px;color:var(--ink);max-width:64ch}
+.src dd.muted{color:var(--muted-deep)}
+@media (max-width:640px){.src dl{grid-template-columns:1fr}.src dt{color:var(--forest-deep)}}
+
+/* -------------------------------------------------------------- checklist */
+.check-group{margin-top:26px}
+.check-group > h3{display:flex;align-items:center;gap:10px}
+.check-group > h3 svg{width:18px;height:18px;color:var(--forest)}
+.check-list{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.check-list li{margin:0;max-width:none}
+.check{display:flex;gap:13px;align-items:flex-start;background:#fff;border:1px solid var(--line);border-radius:var(--r-inner);padding:14px 16px;cursor:pointer}
+.check:hover{border-color:var(--ridge);background:var(--land-0)}
+.check input{flex:none;width:20px;height:20px;margin:3px 0 0;accent-color:var(--forest);cursor:pointer}
+.check input:focus-visible{outline:2.5px solid var(--forest);outline-offset:2px;border-radius:4px}
+.check .q{font-size:15px;font-weight:600;color:var(--forest-deep);display:block}
+.check .why{font-size:14px;color:var(--muted-deep);display:block;margin-top:3px;max-width:70ch}
+.check:has(input:checked){background:var(--land-1);border-color:var(--land-3)}
+.check.is-done{background:var(--land-1);border-color:var(--land-3)}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap}
+h2[id],h3[id],h4[id],section[id]{scroll-margin-top:78px}
+.panel{padding-bottom:8px}
+.progress-card{position:sticky;top:64px;z-index:12;background:var(--land-2);border:1px solid var(--land-3);border-radius:var(--r-card);padding:16px 18px;margin:18px 0 6px}
+.progress-top{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+.progress-text{font-size:15px;font-weight:600;color:var(--forest-deep);font-variant-numeric:tabular-nums}
+.bar{height:9px;border-radius:6px;background:var(--land-0);border:1px solid var(--contour-soft);margin-top:12px;overflow:hidden}
+.bar span{display:block;height:100%;width:0;background:var(--forest);border-radius:5px}
+.progress-card .small{color:var(--forest-deep);margin:10px 0 0}
+
+/* --------------------------------------------------------------- diagram */
+.figure{margin:22px 0;background:#fff;border:1px solid var(--line);border-radius:var(--r-card);padding:12px}
+.figure svg{display:block;width:100%;height:auto}
+figcaption{font-size:13.5px;color:var(--muted-deep);padding:10px 8px 4px;max-width:80ch}
+.svg-label{font-family:"Proxima Nova","Proxima Nova Alt","Hanken Grotesk",Montserrat,system-ui,sans-serif}
+.stage-list{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));margin:16px 0}
+.stage{background:#fff;border:1px solid var(--line);border-radius:var(--r-inner);padding:14px 16px}
+.stage h4{margin:0 0 6px;font-size:14.5px;color:var(--forest-deep)}
+.stage p{margin:0;font-size:14px;color:var(--muted-deep);max-width:none}
+.stage .idx{font-size:12.5px;font-weight:700;color:var(--forest);display:block;margin-bottom:6px}
+
+/* ------------------------------------------------------------------- jump */
+.jump{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:16px 0 4px;padding:0;list-style:none}
+.jump li{margin:0;max-width:none}
+.jump a{font-size:13.5px;font-weight:600;text-decoration:none;color:var(--forest-deep);background:var(--land-1);border:1px solid var(--contour-soft);border-radius:6px;padding:5px 10px;display:inline-block}
+.jump a:hover{background:var(--land-2);border-color:var(--land-3)}
+.jump .jump-label{font-size:13px;color:var(--muted-deep);font-weight:600;margin-right:2px}
+
+/* ----------------------------------------------------------------- footer */
+.foot{margin-top:64px;border-top:1px solid var(--line);background:var(--land-1)}
+.foot-inner{padding-block:30px;display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between;align-items:flex-start}
+.foot p{font-size:13.5px;color:var(--muted-deep);margin:0;max-width:62ch}
+.skip{position:absolute;left:-9999px;top:0;background:#fff;border:1px solid var(--forest);border-radius:8px;padding:9px 14px;font-size:14px;z-index:60}
+.skip:focus{left:12px;top:12px}
+
+/* ------------------------------------------------------------------ print */
+@media print{
+  @page{margin:14mm}
+  html,body{background:#fff;color:#000;font-size:10.5pt}
+  .nav,.masthead .topo,.rule-topo,.toolbar,.copy,.skip,.jump,.bar,.no-print{display:none!important}
+  .progress-card{position:static;background:#fff;border:1px solid #999}
+  .panel{display:block!important;break-before:page;page-break-before:always;padding-top:10px}
+  #overview{break-before:auto;page-break-before:auto}
+  .panel::before{
+    content:attr(data-print-title);display:block;font-size:15pt;font-weight:700;color:#000;
+    border-bottom:1.5pt solid #000;padding-bottom:4pt;margin-bottom:10pt;
+  }
+  h1,h2,h3,h4,.check .q,.src h3{color:#000}
+  h2{break-after:avoid;page-break-after:avoid}
+  h3{break-after:avoid;page-break-after:avoid}
+  .card,.src,.callout,.summary,.stage,.figure,.check,.progress-card,tr{break-inside:avoid;page-break-inside:avoid}
+  .table-wrap{overflow:visible;border-color:#999}
+  a{color:#000;text-decoration:none}
+  .check input{accent-color:#000}
+  body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .src,.card{border-color:#999}
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#panel-overview">Skip to content</a>
+
+<svg class="sprite" aria-hidden="true" focusable="false" width="0" height="0">
+  <defs>
+    <symbol id="topo-header" viewBox="0 0 1600 240" preserveAspectRatio="xMidYMid slice">
+      <g fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round">
+        <path d="M186 -30L104 -14L54 2L8 23L-10 34L-31 50L-40 59"/>
+        <path d="M379 -30L344 -21L300 -9L254 5L213 18L173 28L136 34L104 36L74 34L43 26L8 11L-10 1"/>
+        <path d="M592 270L560 253L536 238L516 222L501 206L492 190L491 174L498 158L516 143L542 130L576 120"/>
+        <path d="M1594 270L1560 258L1524 249L1484 243L1441 239L1394 238L1346 240L1296 246L1248 255L1200 266L1195 269"/>
+        <path d="M676 270L640 257L600 244L556 233L510 224L462 217L412 213L362 212L312 214L262 219L214 227L168 237L126 248L86 260L50 270"/>
+        <path d="M1130 45L1040 40L950 42L862 52L780 70L706 94L642 122L592 152L556 182L534 210L524 234L521 254L520 270"/>
+        <path d="M1188 -30L1150 -26L1108 -19L1063 -9L1016 4L968 19L920 36L874 55L832 76L796 98L768 121L750 144L742 166L745 187L759 205L785 220"/>
+        <path d="M1600 133L1520 124L1436 119L1350 118L1264 122L1180 130L1100 141L1026 155L960 171L904 188L860 205L830 221L814 235L808 248L808 270"/>
+        <path d="M0 143L60 138L124 130L190 119L256 105L320 89L380 72L436 55L486 39L528 24L560 11L580 1"/>
+        <path d="M1600 84L1506 76L1410 72L1312 72L1214 76L1118 84L1026 96L940 111L862 128L794 146L738 164L696 181L670 196L662 209L672 220L700 228"/>
+        <path d="M124 270L96 257L76 243L66 228L68 213L82 199L108 187L146 177L194 169L252 163L318 160L390 160L466 163L544 169L622 177L696 187L764 199L822 212L868 226L900 240L918 254L922 270"/>
+        <path d="M0 200L48 194L100 186L154 175L208 162L260 147L308 131L350 115L384 100L408 86L420 74L418 63L402 54L372 47L328 42L272 39L206 38"/>
+      </g>
+    </symbol>
+    <symbol id="topo-divider" viewBox="0 0 1600 72" preserveAspectRatio="xMidYMid slice">
+      <g fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round">
+        <path d="M1600 21L1500 18L1392 17L1284 19L1176 23L1072 29L976 36L890 44L818 51L762 58L724 64L706 70"/>
+        <path d="M1600 38L1488 33L1370 30L1250 30L1132 33L1020 39L918 47L830 56L758 64L718 71"/>
+        <path d="M0 18L64 15L134 11L206 7L272 5L326 7L362 12L376 19L366 27L332 35L272 43L190 51L92 59L-10 67"/>
+        <path d="M0 44L58 40L122 35L188 29L250 23L302 19L338 17L354 17"/>
+        <path d="M418 72L436 58L470 46L520 36L586 28L664 23L750 21L842 22L934 26L1022 32L1100 39L1164 46L1210 53L1234 60L1236 66L1220 71"/>
+        <path d="M666 6L714 1"/>
+      </g>
+    </symbol>
+    <symbol id="i-overview" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 19.5h17"/><path d="M6 15.5l4.2-5 3.4 3L20 6.2"/><path d="M15.6 6.2H20v4.4"/></g></symbol>
+    <symbol id="i-sap" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="6.4" rx="7.2" ry="3"/><path d="M4.8 6.4v11.2c0 1.66 3.22 3 7.2 3s7.2-1.34 7.2-3V6.4"/><path d="M4.8 12c0 1.66 3.22 3 7.2 3s7.2-1.34 7.2-3"/></g></symbol>
+    <symbol id="i-external" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.2"/><path d="M3.8 12h16.4"/><path d="M12 3.8c2.2 2.4 3.3 5.1 3.3 8.2s-1.1 5.8-3.3 8.2c-2.2-2.4-3.3-5.1-3.3-8.2S9.8 6.2 12 3.8z"/></g></symbol>
+    <symbol id="i-integration" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="6.2" cy="6.4" r="2.6"/><circle cx="18" cy="12" r="2.6"/><circle cx="6.2" cy="17.6" r="2.6"/><path d="M8.6 7.6l6.9 3.2M8.6 16.4l6.9-3.2"/></g></symbol>
+    <symbol id="i-asks" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.8" y="5.6" width="16.4" height="14.2" rx="2.6"/><path d="M3.8 10.2h16.4M8.6 3.4v4.2M15.4 3.4v4.2"/></g></symbol>
+    <symbol id="i-checklist" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.8 7.4l2 2 3.4-3.6"/><path d="M3.8 16.6l2 2 3.4-3.6"/><path d="M13.2 8.2h7M13.2 17.4h7"/></g></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.8" cy="10.8" r="6.6"/><path d="M15.6 15.6L20.4 20.4"/></g></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="10.6" height="10.6" rx="2.6"/><path d="M6.6 15H5.4A1.6 1.6 0 0 1 3.8 13.4V5.4A1.6 1.6 0 0 1 5.4 3.8h8A1.6 1.6 0 0 1 15 5.4v1.2"/></g></symbol>
+    <symbol id="i-leaf" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.8V5.6A1.6 1.6 0 0 1 5.6 4h7.2L20 11.2 12.4 18.8z"/><path d="M8.4 7.6h.02"/></g></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.4l6.8 2.5v5.9c0 4.2-2.9 7.4-6.8 8.5-3.9-1.1-6.8-4.3-6.8-8.5V5.9z"/><path d="M9.2 12.1l2.1 2.1 3.6-3.9"/></g></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.2"/><path d="M12 7.4V12l3.2 2"/></g></symbol>
+    <symbol id="i-mark" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.2"/><path d="M8.4 12.2l2.6 2.6 4.8-5.4"/></g></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4.4 12.8l5 5L19.6 6.4"/></g></symbol>
+    <symbol id="i-people" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9.4" cy="8.4" r="3.4"/><path d="M3.6 19.4c0-3.2 2.6-5.4 5.8-5.4s5.8 2.2 5.8 5.4"/><path d="M16.4 5.6a3.2 3.2 0 0 1 0 6.2M17.6 14.4c1.9.6 3 2.4 3 5"/></g></symbol>
+    <symbol id="mark" viewBox="0 0 32 32"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M3 24.5c4.6-9.2 8.2-13 12.6-13 4.9 0 8.9 4.2 13.4 13"/><path d="M7.5 26.5c3-5.6 5.4-8 8.3-8 3 0 5.6 2.4 8.6 8"/><path d="M13 28.5c1.2-2 2.1-2.9 3-2.9.9 0 1.8.9 3 2.9"/><circle cx="15.8" cy="6.6" r="2.6"/></g></symbol>
+    <symbol id="i-db" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.8" y="4.2" width="16.4" height="15.6" rx="2.4"/><path d="M3.8 9.4h16.4M9.2 9.4v10.4"/></g></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.2l8.8 15.4H3.2z"/><path d="M12 9.8v4.4"/><path d="M12 17.1h.02"/></g></symbol>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 1.4L9 5L0 8.6z" fill="#1F7A4D"/></marker>
+    <marker id="arrow-soft" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 1.4L9 5L0 8.6z" fill="#6FBF8B"/></marker>
+  </defs>
+</svg>
+
+<header class="masthead">
+  <svg class="topo" aria-hidden="true" focusable="false"><use href="#topo-header"/></svg>
+  <div class="wrap masthead-inner">
+    <h1>What Headroom needs from Jabil, and why</h1>
+    <p class="lede">Headroom is the proposed advanced Credit Management Dashboard for Jabil. This document is the data request: the SAP data we would need, the outside data we would add, how the two connect, and the decisions only Jabil can make.</p>
+    <ul class="meta">
+      <li>Project IND2620-0011</li>
+      <li>NUS MSc capstone, 23 weeks</li>
+      <li>Starts 11 January 2027</li>
+      <li>Version 1.0</li>
+    </ul>
+  </div>
+</header>
+
+<nav class="nav" aria-label="Document sections">
+  <div class="wrap nav-inner">
+    <a class="brand" href="#overview">
+      <svg aria-hidden="true" focusable="false"><use href="#mark"/></svg>
+      Headroom <span>Data requirements</span>
+    </a>
+    <div class="tablist" role="tablist" aria-label="Data requirements sections" id="tablist">
+      <button class="tab" role="tab" id="tab-overview" aria-controls="overview" aria-selected="true" tabindex="0" data-tab="overview"><svg aria-hidden="true" focusable="false"><use href="#i-overview"/></svg>Overview</button>
+      <button class="tab" role="tab" id="tab-sap" aria-controls="sap" aria-selected="false" tabindex="-1" data-tab="sap"><svg aria-hidden="true" focusable="false"><use href="#i-sap"/></svg>From SAP</button>
+      <button class="tab" role="tab" id="tab-external" aria-controls="external" aria-selected="false" tabindex="-1" data-tab="external"><svg aria-hidden="true" focusable="false"><use href="#i-external"/></svg>External data</button>
+      <button class="tab" role="tab" id="tab-integration" aria-controls="integration" aria-selected="false" tabindex="-1" data-tab="integration"><svg aria-hidden="true" focusable="false"><use href="#i-integration"/></svg>How it connects</button>
+      <button class="tab" role="tab" id="tab-asks" aria-controls="asks" aria-selected="false" tabindex="-1" data-tab="asks"><svg aria-hidden="true" focusable="false"><use href="#i-asks"/></svg>What we need</button>
+      <button class="tab" role="tab" id="tab-checklist" aria-controls="checklist" aria-selected="false" tabindex="-1" data-tab="checklist"><svg aria-hidden="true" focusable="false"><use href="#i-checklist"/></svg>Readiness check</button>
+    </div>
+  </div>
+</nav>
+
+<main class="wrap" id="main">
+<section class="panel" id="overview" role="tabpanel" aria-labelledby="tab-overview" tabindex="0" data-print-title="1. Overview">
+  <div class="summary">
+    <h2>Read this in 60 seconds</h2>
+    <p class="note">Three answers carry the rest of the document. Everything after this box is the detail behind them.</p>
+    <div class="summary-grid">
+      <div class="summary-item">
+        <h3>What we need from SAP</h3>
+        <p>Invoice-level AR with due dates and paid dates, about three years back; open customer orders; dedicated stock; customer master and hierarchy; and credit-limit history. Read-only, on a schedule, with masked names if Jabil prefers.</p>
+      </div>
+      <div class="summary-item">
+        <h3>What we add from outside</h3>
+        <p>Public filings, legal-entity identity, news, share prices and sector data. Free sources first. Only public identifiers leave Jabil's network: a ticker, a CIK, an LEI or a company name that is already on a public register.</p>
+      </div>
+      <div class="summary-item">
+        <h3>What only Jabil can decide</h3>
+        <p>Which data we may use, the rules for public sources and language models, where the tool runs, and who owns handover. The tool advises; a Jabil analyst decides. Nothing is ever written back to SAP.</p>
+      </div>
+    </div>
+    <p class="note"><strong>No claim is made here that Jabil has given us any data.</strong> Every row in this document is a request, and any table or field name from Jabil's system is marked as indicative until an SAP colleague confirms it.</p>
+  </div>
+
+  <h2 id="ov-gap">The gap this project fills</h2>
+  <p>Jabil's current Credit Management Dashboard shows exposure as it is today: accounts receivable, dedicated inventory, open purchase orders and credit limits from SAP, at customer-code and customer-hierarchy level. It is a faithful picture of the position, and it is always a picture of the past. It cannot say that a limit will be breached in nine weeks, that a customer's payment behaviour has quietly changed, or that a group has just filed something material. Headroom predicts those things, and shows its reasons.</p>
+  <p>The difference between reporting and predicting is data. This document sets out exactly what we would need, what we would do with it, and what we would do if a piece of it is not available.</p>
+
+  <svg class="rule-topo" aria-hidden="true" focusable="false"><use href="#topo-divider"/></svg>
+
+  <h2 id="ov-map">Six asks, four modules, and the data each one needs</h2>
+  <p>Jabil's project description names six things the new dashboard should do. We answer them with four modules, one owned by each student on the team. The table below maps every ask to the module that answers it and to the data that module reads.</p>
+  <div class="toolbar">
+    <span class="count">Six asks, four modules</span>
+    <button class="btn copy" type="button" data-copy="ask-map" data-label="Copy as TSV"><svg aria-hidden="true" focusable="false"><use href="#i-copy"/></svg><span>Copy as TSV</span></button>
+  </div>
+  <div class="table-wrap">
+    <table id="ask-map">
+      <caption>Jabil's asks are quoted from the project description. The data column says what has to exist for the module to work.</caption>
+      <thead>
+        <tr>
+          <th scope="col">Jabil's ask</th>
+          <th scope="col">Module that answers it</th>
+          <th scope="col">SAP data it needs</th>
+          <th scope="col">External data it needs</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="mid"><strong>Predict Credit Limit Breaches</strong></td>
+          <td class="nowrap">Exposure forecast</td>
+          <td class="wide">Open AR items with due dates and amounts; open customer orders with confirmed delivery dates; dedicated stock and its valuation; the credit limit and its history; the FX rates Jabil uses, so our figures reconcile to the CMD.</td>
+          <td class="wide">None required. The forecast runs on SAP data alone, which is deliberate: it must work even if no outside source is approved.</td>
+        </tr>
+        <tr>
+          <td class="mid"><strong>Generate Risk Scores</strong></td>
+          <td class="nowrap">Early-warning score</td>
+          <td class="wide">About three years of invoice and payment history at invoice level: due date, paid date, amount, partial payments, short-pays and payment differences; DPD buckets; rolling DSO by customer.</td>
+          <td class="wide">Annual and quarterly filings for a financial-distress measure (Altman Z''); news tone; share prices where the customer is listed.</td>
+        </tr>
+        <tr>
+          <td class="mid"><strong>Identify Deteriorating Risk Profiles</strong></td>
+          <td class="nowrap">Early-warning score</td>
+          <td class="wide">The same history, plus order changes and cancellations, dunning history and credit-limit changes, so that a change in behaviour is visible rather than inferred.</td>
+          <td class="wide">Material corporate events from Form 8-K; a rise in negative news; a fall in the market signal.</td>
+        </tr>
+        <tr>
+          <td class="mid"><strong>Generate Prioritised Watchlists</strong></td>
+          <td class="nowrap">Watchlist and reasons</td>
+          <td class="wide">Customer master and hierarchy, exposure against limit, current scores and how far each score has moved since last week.</td>
+          <td class="wide">Legal-entity identity (LEI) so the right company is matched and rolled up; sector context for the reason line.</td>
+        </tr>
+        <tr>
+          <td class="mid"><strong>Provide Explainable Risk Drivers</strong></td>
+          <td class="nowrap">Watchlist and reasons</td>
+          <td class="wide">Every input kept at its own level of detail: the individual invoice, the order line, the limit change. Aggregates alone cannot produce a reason an analyst can defend.</td>
+          <td class="wide">The named public event behind a signal: an 8-K item, a filing line, a news item with its date and source.</td>
+        </tr>
+        <tr>
+          <td class="mid"><strong>Add External Credit Information</strong></td>
+          <td class="nowrap">External credit radar</td>
+          <td class="wide">Only the customer master fields needed to match a customer to a legal entity: name, address, country, parent group, industry key. No amounts and no invoice detail are used for matching.</td>
+          <td class="wide">All public sources catalogued in the External data tab. Licensed credit data only if Jabil already holds a licence we may use.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout callout-forest">
+    <div class="callout-head">
+      <svg class="ico" aria-hidden="true" focusable="false"><use href="#i-shield"/></svg>
+      <div>
+        <h3>What this document does not ask for</h3>
+        <p>It does not ask for a change to any live SAP system. It does not ask for a user that can write, post or change anything. It does not ask for access to customer contact details or to any commercial terms beyond the credit limit itself. It does not ask Jabil to buy anything before the prototype has shown that it works.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="panel" id="sap" role="tabpanel" aria-labelledby="tab-sap" tabindex="0" data-print-title="2. From SAP — the internal data" hidden>
+  <h2 id="sap-intro">The internal data: what we would need from SAP</h2>
+  <p>This is the part of the request that matters most. SAP data carries the forecast and the score; outside data only sharpens them. The list below is written so that an SAP or IT colleague can point at each row and say either "we have that", "we have something close", or "that would have to be built".</p>
+
+  <div class="callout callout-honey">
+    <div class="callout-head">
+      <svg class="ico" aria-hidden="true" focusable="false"><use href="#i-alert"/></svg>
+      <div>
+        <h3>Table and field names are indicative only</h3>
+        <p>The SAP objects named in this table (BSID, BSAD, VBAK, VBAP, LIPS, MARD, MCHB, KNKK, KNA1, KNVV, CDHDR and similar) are the standard objects we would expect to find behind this kind of data. <strong>We do not claim to know Jabil's actual schema, its custom objects or its naming.</strong> Treat every one of them as a question: is this where the data lives, and if not, where?</p>
+      </div>
+    </div>
+  </div>
+
+  <h3 id="sap-legend">How to read the status codes</h3>
+  <ul class="legend">
+    <li><span class="tag tag-b" aria-hidden="true">B</span><span><b>B</b> — named in Jabil's project description, so we know it exists in some form.</span></li>
+    <li><span class="tag tag-c" aria-hidden="true">C</span><span><b>C</b> — to confirm with Jabil: we believe it exists, but not in what shape or at what detail.</span></li>
+    <li><span class="tag tag-p" aria-hidden="true">P</span><span><b>P</b> — public source, outside Jabil, free unless stated.</span></li>
+    <li><span class="tag tag-n" aria-hidden="true">N</span><span><b>N</b> — new data the tool creates, and which Jabil owns.</span></li>
+  </ul>
+
+  <div class="toolbar">
+    <div class="search">
+      <svg aria-hidden="true" focusable="false"><use href="#i-search"/></svg>
+      <input type="search" id="sap-search" placeholder="Search fields, modules, priorities" aria-label="Search the SAP data list" autocomplete="off">
+    </div>
+    <span class="count" id="sap-count" aria-live="polite"></span>
+    <button class="btn copy" type="button" data-copy="sap-table" data-label="Copy as TSV"><svg aria-hidden="true" focusable="false"><use href="#i-copy"/></svg><span>Copy as TSV</span></button>
+  </div>
+
+  <div class="table-wrap">
+    <table id="sap-table">
+      <caption>Every row is a request. Priority says how much the tool loses if the row is unavailable.</caption>
+      <thead>
+        <tr>
+          <th scope="col">Field or dataset</th>
+          <th scope="col">What it is in SAP terms (indicative)</th>
+          <th scope="col">Module</th>
+          <th scope="col">Granularity</th>
+          <th scope="col">History we need</th>
+          <th scope="col">Priority</th>
+          <th scope="col">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Invoice and payment records (AR)</strong></td>
+          <td>Open items (BSID) and cleared items (BSAD), or the CDS view behind them: due date, baseline date, clearing date, document amount, local and document currency, customer, company code.</td>
+          <td>Forecast + Score</td>
+          <td>Invoice line</td>
+          <td class="nowrap">About 3 years</td>
+          <td><span class="pri pri-req">Required</span></td>
+          <td><span class="tag tag-c" title="To confirm with Jabil"><span aria-hidden="true">C</span><span class="sr-only">To confirm with Jabil</span></span></td>
+        </tr>
+        <tr>
+          <td><strong>Customer payment behaviour</strong></td>
+          <td>Clearing documents and residual items: partial payments, short-pays, payment differences, cash discount taken, payment method, days between due date and clearing date.</td>
+          <td>Score</td>
+          <td>Payment</td>
+          <td class="nowrap">About 3 years</td>
+          <td><span class="pri pri-req">Required</span></td>
+          <td><span class="tag tag-c" title="To confirm with Jabil"><span aria-hidden="true">C</span><span class="sr-only">To confirm with Jabil</span></span></td>
+        </tr>
+        <tr>
+          <td><strong>Open customer orders (PO)</strong></td>
+          <td>Sales orders (VBAK header, VBAP item): order value, confirmed delivery date, order type, customer, sales organisation, item category.</td>
+          <td>Forecast + Score</td>
+          <td>Order line</td>
+          <td class="nowrap">About 2 years</td>
+          <td><span class="pri pri-req">Required</span></td>
+          <td><span class="tag tag-b" title="Named in Jabil's project description"><span aria-hidden="true">B</span><span class="sr-only">Named in Jabil's project description</span></span></td>
+        </tr>
+        <tr>
+          <td><strong>Order changes and cancellations</strong></td>
+          <td>Change documents on sales orders, rejection reasons, schedule-line push-outs, quantity reductions, and the date each change was made.</td>
+          <td>Score</td>
+          <td>Change event</td>
+          <td class="nowrap">About 2 years</td>
+          <td><span class="pri pri-need">Needed</span></td>
+          <td><span class="tag tag-c" title="To confirm with Jabil"><span aria-hidden="true">C</span><span class="sr-only">To confirm with Jabil</span></span></td>
+        </tr>
+        <tr>
+          <td><strong>Dedicated stock / inventory</strong></td>
+          <td>Storage-location and batch stock (MARD, MCHB): special stock indicator for customer stock, unrestricted and blocked quantity, valuation class and value.</td>
+          <td>Forecast + Score</td>
+          <td>Material x location</td>
+          <td class="nowrap">About 2 years</td>
+          <td><span class="pri pri-req">Required</span></td>
+          <td><span class="tag tag-b" title="Named in Jabil's project description"><span aria-hidden="true">B</span><span class="sr-only">Named in Jabil's project description</span></span></td>
+        </tr>
+        <tr>
+          <td><strong>Credit limits and changes</strong></td>
+          <td>Credit master (KNKK): credit limit, limit used, risk category, blocked status; plus the history of limit changes and any recorded limit request.</td>
+          <td>Forecast + Watchlist</td>
+          <td>Customer code and group</td>
+          <td class="nowrap">About 3 years</td>
+          <td><span class="pri pri-req">Required</span></td>
+          <td><span class="tag tag-b" title="Named in Jabil's project description"><span aria-hidden="true">B</span><span class="sr-only">Named in Jabil's project description</span></span></td>
+        </tr>
+        <tr>
+          <td><strong>Customer master and hierarchy</strong></td>
+          <td>Customer master (KNA1, KNVV) and the customer hierarchy: customer code, name, address, country, industry key, sales organisation, parent and group node.</td>
+          <td>Radar + Watchlist</td>
+          <td>Customer code</td>
+          <td class="nowrap">Current plus history</td>
+          <td><span class="pri pri-req">Required</span></td>
+          <td><span class="tag tag-b" title="Named in Jabil's project description"><span aria-hidden="true">B</span><span class="sr-only">Named in Jabil's project description</span></span></td>
+        </tr>
+        <tr>
+          <td><strong>Disputes, write-offs, recoveries</strong></td>
+          <td>Dispute cases, write-off documents, recovery postings and realised loss given default, wherever they are recorded today.</td>
+          <td>Score + Watchlist</td>
+          <td>Case</td>
+          <td class="nowrap">About 3 years</td>
+          <td><span class="pri pri-need">Needed</span></td>
+          <td><span class="tag tag-c" title="To confirm with Jabil"><span aria-hidden="true">C</span><span class="sr-only">To confirm with Jabil</span></span></td>
+        </tr>
+        <tr>
+          <td><strong>Days sales outstanding (DSO) and DPD aging</strong></td>
+          <td>Derived from the AR items rather than stored: DPD buckets (1&ndash;30, 31&ndash;60, 61&ndash;90, 90+ days), rolling DSO by customer and month, and the ageing profile behind each figure.</td>
+          <td>Score</td>
+          <td>Customer x month</td>
+          <td class="nowrap">About 3 years</td>
+          <td><span class="pri pri-req">Required</span></td>
+          <td><span class="tag tag-b" title="Named in Jabil's project description"><span aria-hidden="true">B</span><span class="sr-only">Named in Jabil's project description</span></span></td>
+        </tr>
+        <tr>
+          <td><strong>Currency and FX rates</strong></td>
+          <td>Company code currency and the exchange rates used for exposure conversion, with the rate date, so that our exposure figures tie back to Jabil's own reports.</td>
+          <td>Forecast</td>
+          <td>Daily</td>
+          <td class="nowrap">About 3 years</td>
+          <td><span class="pri pri-req">Required</span></td>
+          <td><span class="tag tag-c" title="To confirm with Jabil"><span aria-hidden="true">C</span><span class="sr-only">To confirm with Jabil</span></span></td>
+        </tr>
+        <tr>
+          <td><strong>Deliveries and goods issue</strong></td>
+          <td>Delivery items and document flow (LIPS, VBFA): delivery date, goods-issue date, quantity delivered against each order line, and what remains open.</td>
+          <td>Forecast + Score</td>
+          <td>Delivery line</td>
+          <td class="nowrap">About 3 years</td>
+          <td><span class="pri pri-need">Needed</span></td>
+          <td><span class="tag tag-c" title="To confirm with Jabil"><span aria-hidden="true">C</span><span class="sr-only">To confirm with Jabil</span></span></td>
+        </tr>
+        <tr>
+          <td><strong>Credit notes, returns and rebates</strong></td>
+          <td>Billing documents (VBRK, VBRP): credit notes, returns and rebates, with their payment status, so that net exposure is not overstated.</td>
+          <td>Score</td>
+          <td>Billing line</td>
+          <td class="nowrap">About 3 years</td>
+          <td><span class="pri pri-nice">Nice to have</span></td>
+          <td><span class="tag tag-c" title="To confirm with Jabil"><span aria-hidden="true">C</span><span class="sr-only">To confirm with Jabil</span></span></td>
+        </tr>
+        <tr>
+          <td><strong>Dunning and collections history</strong></td>
+          <td>Dunning runs or their equivalent: dunning level, dunning date, promises to pay, escalation to a collection agency, and any note that explains a delay.</td>
+          <td>Score</td>
+          <td>Customer x dunning run</td>
+          <td class="nowrap">About 3 years</td>
+          <td><span class="pri pri-need">Needed</span></td>
+          <td><span class="tag tag-c" title="To confirm with Jabil"><span aria-hidden="true">C</span><span class="sr-only">To confirm with Jabil</span></span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="empty" id="sap-empty" hidden>No row matches that search. Try a shorter word, or clear the box to see all thirteen rows.</div>
+
+  <h3 id="sap-priority">What the priority column means</h3>
+  <ul>
+    <li><strong>Required</strong> — the forecast or the score cannot run without it. If a required row is missing, that module does not ship.</li>
+    <li><strong>Needed</strong> — the score still runs, but it is weaker and harder to explain, and the back-test has less to work with.</li>
+    <li><strong>Nice to have</strong> — improves detail and presentation only. We would not ask Jabil to build anything for it.</li>
+  </ul>
+
+  <h3 id="sap-shape">The shape of the extract we would ask for</h3>
+  <p>One row per document or item, a stable key that survives a system change, and a timestamp for when the row last changed. Names can be masked: a stable customer key plus a masked name is enough for the models, and the analyst's screen can show whatever the CMD already shows. Where a field is genuinely absent, monthly totals are a workable fallback — we would say so on screen rather than pretend the detail exists.</p>
+
+  <div class="callout callout-teal">
+    <div class="callout-head">
+      <svg class="ico" aria-hidden="true" focusable="false"><use href="#i-clock"/></svg>
+      <div>
+        <h3>One request, not nine</h3>
+        <p>We would rather receive one well-defined extract covering these rows than nine separate reports. The refresh table in the How it connects tab shows how often each part is read; the SAP extract itself is nightly, changed rows only.</p>
+      </div>
+    </div>
+  </div>
+</section>
+<section class="panel" id="external" role="tabpanel" aria-labelledby="tab-external" tabindex="0" data-print-title="3. External data — the catalogue" hidden>
+  <h2 id="ext-intro">External data: what we would add, and what it costs</h2>
+  <p>SAP tells us how a customer is behaving with Jabil. It cannot tell us that the customer's own margins are falling, that its auditor has resigned, or that its sector has just been hit by a tariff. That is what the external catalogue is for. Five families of signal are involved: <strong>filings</strong>, <strong>events</strong>, <strong>news</strong>, <strong>market</strong> and <strong>sector</strong>.</p>
+
+  <div class="callout callout-forest">
+    <div class="callout-head">
+      <svg class="ico" aria-hidden="true" focusable="false"><use href="#i-leaf"/></svg>
+      <div>
+        <h3>Free first, paid only to fill gaps</h3>
+        <p>Everything the prototype needs is available free: SEC EDGAR, GLEIF, GDELT, FRED, the World Bank and openFDA. We would build and prove the radar on those before asking Jabil to consider anything paid. Where a paid source is listed below, it is listed because a free one may not cover it — and the first question is always whether Jabil already holds a licence we may reuse.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <div class="search">
+      <svg aria-hidden="true" focusable="false"><use href="#i-search"/></svg>
+      <input type="search" id="ext-search" placeholder="Search sources, modules, coverage, cost" aria-label="Search the external data catalogue" autocomplete="off">
+    </div>
+    <span class="count" id="ext-count" aria-live="polite"></span>
+    <button class="btn copy" type="button" data-copy="ext-list" data-label="Copy as TSV"><svg aria-hidden="true" focusable="false"><use href="#i-copy"/></svg><span>Copy as TSV</span></button>
+  </div>
+
+  <div class="stack" id="ext-list">
+    <article class="src">
+      <div class="src-head">
+        <h3>SEC EDGAR — company filings, read as structured data (XBRL, using edgartools)</h3>
+        <div class="badges"><span class="cost cost-free">Free</span></div>
+      </div>
+      <dl>
+        <dt>What it gives us</dt><dd>Quarterly and annual financial statements in machine-readable form: revenue, margins, liquidity, debt and equity. From those we compute Altman Z'' and simple trend tests, and we show the input lines behind them.</dd>
+        <dt>Which module</dt><dd>Early-warning score; external credit radar</dd>
+        <dt>Customers covered</dt><dd>Groups that file with the SEC, including non-US groups with a US listing or a US-registered subsidiary that files.</dd>
+        <dt>Refresh rate</dt><dd>Quarterly for the statements, with a daily check for anything newly filed.</dd>
+        <dt>Cost or licence</dt><dd>Free, no key. Fair-access rules apply, at roughly 10 requests a second. We stay well inside that.</dd>
+        <dt>Mine or buy</dt><dd>Mine. We build the reader and the ratios ourselves.</dd>
+      </dl>
+    </article>
+
+    <article class="src">
+      <div class="src-head">
+        <h3>SEC EDGAR — Form 8-K events</h3>
+        <div class="badges"><span class="cost cost-free">Free</span></div>
+      </div>
+      <dl>
+        <dt>What it gives us</dt><dd>Material corporate events, usually within four business days: officer departures, restructuring, impairment, accelerated debt repayment, auditor changes, bankruptcy. This is the fastest reliable public signal that something has changed at a customer.</dd>
+        <dt>Which module</dt><dd>External credit radar; same-day alerts on the watchlist</dd>
+        <dt>Customers covered</dt><dd>US-listed groups.</dd>
+        <dt>Refresh rate</dt><dd>Checked every 15 minutes, because a serious filing should reach an analyst the same morning.</dd>
+        <dt>Cost or licence</dt><dd>Free, no key. Same fair-access rules as EDGAR.</dd>
+        <dt>Mine or buy</dt><dd>Mine.</dd>
+      </dl>
+    </article>
+
+    <article class="src">
+      <div class="src-head">
+        <h3>SEC company tickers file</h3>
+        <div class="badges"><span class="cost cost-free">Free</span></div>
+      </div>
+      <dl>
+        <dt>What it gives us</dt><dd>The mapping between a ticker, a CIK number and a company's legal name. Small, but it is the hinge that lets a customer name resolve to the right filer.</dd>
+        <dt>Which module</dt><dd>Entity matching, which every other module depends on</dd>
+        <dt>Customers covered</dt><dd>All US-listed filers.</dd>
+        <dt>Refresh rate</dt><dd>Daily.</dd>
+        <dt>Cost or licence</dt><dd>Free, no key.</dd>
+        <dt>Mine or buy</dt><dd>Mine.</dd>
+      </dl>
+    </article>
+
+    <article class="src">
+      <div class="src-head">
+        <h3>GLEIF — Legal Entity Identifier data</h3>
+        <div class="badges"><span class="cost cost-free">Free</span></div>
+      </div>
+      <dl>
+        <dt>What it gives us</dt><dd>Legal entity identity and parent relationships: which legal entity a customer actually is, and who owns whom. This is what turns a list of customer codes into a group view that matches how credit risk really arrives.</dd>
+        <dt>Which module</dt><dd>Entity matching; risk drivers</dd>
+        <dt>Customers covered</dt><dd>Any entity that holds an LEI, worldwide, plus its recorded parent.</dd>
+        <dt>Refresh rate</dt><dd>Daily. Ownership and identity change slowly.</dd>
+        <dt>Cost or licence</dt><dd>Free API under an open licence. Confirm the current terms on gleif.org before live use, and cite GLEIF as the source.</dd>
+        <dt>Mine or buy</dt><dd>Mine.</dd>
+      </dl>
+    </article>
+
+    <article class="src">
+      <div class="src-head">
+        <h3>GDELT Project — global news events</h3>
+        <div class="badges"><span class="cost cost-free">Free</span></div>
+      </div>
+      <dl>
+        <dt>What it gives us</dt><dd>News events from around the world, coded by theme, place, source and tone, updated continuously. We filter to the customer's name, its country and its sector, and keep the link and the date so a reason can be checked.</dd>
+        <dt>Which module</dt><dd>External credit radar; news tone in the score</dd>
+        <dt>Customers covered</dt><dd>Worldwide, though coverage is thinner for small private companies.</dd>
+        <dt>Refresh rate</dt><dd>Every 15 minutes.</dd>
+        <dt>Cost or licence</dt><dd>Free, including for commercial use, with citation and a link back to GDELT. Confirm the current terms.</dd>
+        <dt>Mine or buy</dt><dd>Mine.</dd>
+      </dl>
+    </article>
+
+    <article class="src">
+      <div class="src-head">
+        <h3>FinBERT — language model for tone</h3>
+        <div class="badges"><span class="cost cost-mixed">Open model, licence to confirm</span></div>
+      </div>
+      <dl>
+        <dt>What it gives us</dt><dd>A consistent tone score for a news item or a filing paragraph, instead of a hand-written keyword list. It runs on our side, inside the network, so no text is sent anywhere.</dd>
+        <dt>Which module</dt><dd>News tone; risk drivers</dd>
+        <dt>Customers covered</dt><dd>Any customer with news or filings in English.</dd>
+        <dt>Refresh rate</dt><dd>On each new item, as part of the pipeline run.</dd>
+        <dt>Cost or licence</dt><dd>An open model, first published in 2019. The licence must be confirmed before live use, and the model card recorded in the handover.</dd>
+        <dt>Mine or buy</dt><dd>Mine. We host it and we run it.</dd>
+      </dl>
+    </article>
+
+    <article class="src">
+      <div class="src-head">
+        <h3>FRED — Federal Reserve Bank of St Louis</h3>
+        <div class="badges"><span class="cost cost-free">Free, key required</span></div>
+      </div>
+      <dl>
+        <dt>What it gives us</dt><dd>Industry orders and production, input commodity prices such as copper, aluminium and resin, and broad demand indicators. Useful because Jabil is a contract manufacturer: input costs move before customer stress becomes visible in payments.</dd>
+        <dt>Which module</dt><dd>Early-warning score; risk drivers</dd>
+        <dt>Customers covered</dt><dd>Sector and country level, not customer level.</dd>
+        <dt>Refresh rate</dt><dd>Weekly check; most series are monthly or quarterly.</dd>
+        <dt>Cost or licence</dt><dd>Free. An API key is required, and the series must be cited.</dd>
+        <dt>Mine or buy</dt><dd>Mine. Note for Jabil: the ISM PMI series are no longer carried on FRED, so we would use a substitute series or read the ISM release directly.</dd>
+      </dl>
+    </article>
+
+    <article class="src">
+      <div class="src-head">
+        <h3>World Bank Open Data</h3>
+        <div class="badges"><span class="cost cost-free">Free</span></div>
+      </div>
+      <dl>
+        <dt>What it gives us</dt><dd>Country risk and sovereign context: growth, inflation, external debt, income group. This is what stops a country problem being read as a customer problem.</dd>
+        <dt>Which module</dt><dd>Risk drivers; external credit radar</dd>
+        <dt>Customers covered</dt><dd>By the customer's country, worldwide.</dd>
+        <dt>Refresh rate</dt><dd>Monthly to annual, checked weekly.</dd>
+        <dt>Cost or licence</dt><dd>Free, with attribution.</dd>
+        <dt>Mine or buy</dt><dd>Mine.</dd>
+      </dl>
+    </article>
+
+    <article class="src">
+      <div class="src-head">
+        <h3>Share prices — Alpha Vantage free tier or yfinance</h3>
+        <div class="badges"><span class="cost cost-mixed">Prototype only</span></div>
+      </div>
+      <dl>
+        <dt>What it gives us</dt><dd>Equity value and volatility for listed customers and their closest peers, which feed a distance-to-default measure and a market signal that often moves before the financial statements do.</dd>
+        <dt>Which module</dt><dd>Early-warning score; external credit radar</dd>
+        <dt>Customers covered</dt><dd>Listed groups only. Private customers get no market signal, and the score says so.</dd>
+        <dt>Refresh rate</dt><dd>Daily, after the relevant market closes.</dd>
+        <dt>Cost or licence</dt><dd>Prototype only. The Alpha Vantage free tier allows roughly 25 requests a day; yfinance is unofficial and unsupported. Live use at Jabil's scale would need a proper market-data licence.</dd>
+        <dt>Mine or buy</dt><dd>Mine for the prototype; buy for live use.</dd>
+      </dl>
+    </article>
+
+    <article class="src">
+      <div class="src-head">
+        <h3>Headline feeds — NewsAPI, GNews or Finnhub</h3>
+        <div class="badges"><span class="cost cost-paid">Free tier is development only</span></div>
+      </div>
+      <dl>
+        <dt>What it gives us</dt><dd>A second, broader headline feed alongside GDELT, mainly for older items and for regional press. Optional: the radar works without it.</dd>
+        <dt>Which module</dt><dd>External credit radar (optional)</dd>
+        <dt>Customers covered</dt><dd>Worldwide, unevenly.</dd>
+        <dt>Refresh rate</dt><dd>Continuous in principle; the free tiers are delayed by 24 hours.</dd>
+        <dt>Cost or licence</dt><dd>Free tiers are for development only and usually forbid production use. Paid plans start at about USD 449 a month. We would only propose this if a gap remains after GDELT.</dd>
+        <dt>Mine or buy</dt><dd>Buy, if it is ever needed.</dd>
+      </dl>
+    </article>
+
+    <article class="src">
+      <div class="src-head">
+        <h3>openFDA and NHTSA — recalls and enforcement</h3>
+        <div class="badges"><span class="cost cost-free">Free</span></div>
+      </div>
+      <dl>
+        <dt>What it gives us</dt><dd>Product recalls, warning letters and enforcement actions. Relevant only to healthcare and automotive customers, where a recall is both a cost event and a signal about the customer's own quality systems.</dd>
+        <dt>Which module</dt><dd>External credit radar</dd>
+        <dt>Customers covered</dt><dd>Healthcare and automotive customers only. For other sectors these sources return nothing useful, and we would switch them off.</dd>
+        <dt>Refresh rate</dt><dd>Weekly.</dd>
+        <dt>Cost or licence</dt><dd>Free public data. Terms to confirm before live use.</dd>
+        <dt>Mine or buy</dt><dd>Mine.</dd>
+      </dl>
+    </article>
+
+    <article class="src">
+      <div class="src-head">
+        <h3>Licensed credit data — ratings, CDS, consensus, default benchmarks</h3>
+        <div class="badges"><span class="cost cost-paid">Paid — reuse a Jabil licence first</span></div>
+      </div>
+      <dl>
+        <dt>What it gives us</dt><dd>Agency ratings and scores, CDS spreads where they exist, consensus earnings revisions, and industry default and recovery benchmarks. The benchmarks matter most: they are what let a score be calibrated to real default rates rather than to an assumption.</dd>
+        <dt>Which module</dt><dd>All modules, as calibration input</dd>
+        <dt>Customers covered</dt><dd>Rated entities and larger groups. Many Jabil customers, being private mid-sized manufacturers, would not be covered at all.</dd>
+        <dt>Refresh rate</dt><dd>As licensed, usually daily.</dd>
+        <dt>Cost or licence</dt><dd>Paid; reuse any Jabil licence first. Providers in this space include Moody's Analytics, S&amp;P Global, IHS Markit, LSEG Refinitiv and FactSet. We would only ask for this once the free sources are in place and a named gap remains.</dd>
+        <dt>Mine or buy</dt><dd>Buy, and only through a licence Jabil already holds where possible.</dd>
+      </dl>
+    </article>
+
+    <article class="src">
+      <div class="src-head">
+        <h3>ECIA and Supplyframe — component lead times</h3>
+        <div class="badges"><span class="cost cost-paid">Specialised, mostly paid</span></div>
+      </div>
+      <dl>
+        <dt>What it gives us</dt><dd>Electronic component lead times and availability. This is unusual for a credit tool and genuinely relevant here: when a component goes short, a contract manufacturer's customers change order patterns weeks before they change payment behaviour.</dd>
+        <dt>Which module</dt><dd>Early-warning score; risk drivers</dd>
+        <dt>Customers covered</dt><dd>Sector level rather than customer level.</dd>
+        <dt>Refresh rate</dt><dd>Weekly to monthly.</dd>
+        <dt>Cost or licence</dt><dd>Specialised and mostly paid. Public summaries may be enough for the prototype; a licence would be needed for anything systematic.</dd>
+        <dt>Mine or buy</dt><dd>Buy if it proves useful; otherwise leave it out.</dd>
+      </dl>
+    </article>
+
+    <article class="src">
+      <div class="src-head">
+        <h3>Supply chain and trade policy</h3>
+        <div class="badges"><span class="cost cost-free">Free</span></div>
+      </div>
+      <dl>
+        <dt>What it gives us</dt><dd>Export controls, tariff announcements and trade-policy shifts, read from GDELT and World Bank material and filtered to the customer's country and sector. For a manufacturer with cross-border customers this is often the largest single external driver.</dd>
+        <dt>Which module</dt><dd>External credit radar; risk drivers</dd>
+        <dt>Customers covered</dt><dd>By country and sector.</dd>
+        <dt>Refresh rate</dt><dd>Daily.</dd>
+        <dt>Cost or licence</dt><dd>Free, with attribution.</dd>
+        <dt>Mine or buy</dt><dd>Mine.</dd>
+      </dl>
+    </article>
+  </div>
+  <div class="empty" id="ext-empty" hidden>No source matches that search. Try a shorter word, or clear the box to see the whole catalogue.</div>
+
+  <h3 id="ext-tiers">How a customer is matched to an outside source</h3>
+  <p>External data is only useful if it lands on the right company. Every customer is placed in one of three tiers, and the tier decides which signals can apply. Matching is done on public identifiers only — never on amounts.</p>
+  <div class="toolbar">
+    <span class="count">Three tiers</span>
+    <button class="btn copy" type="button" data-copy="tier-table" data-label="Copy as TSV"><svg aria-hidden="true" focusable="false"><use href="#i-copy"/></svg><span>Copy as TSV</span></button>
+  </div>
+  <div class="table-wrap">
+    <table id="tier-table">
+      <caption>Coverage figures are illustrative, taken from the team's own sample of a 120-group portfolio. They are not Jabil data.</caption>
+      <thead>
+        <tr>
+          <th scope="col">Tier</th>
+          <th scope="col">Who is in it</th>
+          <th scope="col">Signal families that apply</th>
+          <th scope="col">How we match it</th>
+          <th scope="col">Illustrative coverage</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Tier A</strong></td>
+          <td class="mid">Listed, and files with the SEC</td>
+          <td class="wide">All five: filings, events, news, market and sector.</td>
+          <td class="mid">Ticker or LEI to CIK, confirmed against the registered name.</td>
+          <td class="nowrap">49 of 120 groups</td>
+        </tr>
+        <tr>
+          <td><strong>Tier B</strong></td>
+          <td class="mid">Listed elsewhere, no SEC filing</td>
+          <td class="wide">Market where a price is available, news, and sector.</td>
+          <td class="mid">LEI, ISIN, or name with country and registered address.</td>
+          <td class="nowrap">31 of 120 groups</td>
+        </tr>
+        <tr>
+          <td><strong>Tier C</strong></td>
+          <td class="mid">Private company or a subsidiary</td>
+          <td class="wide">News and sector, plus the parent's filings where LEI data names a parent.</td>
+          <td class="mid">LEI, or name and address; the parent's LEI where it exists.</td>
+          <td class="nowrap">40 of 120 groups</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="small">Tier C is the honest limit of this approach. Roughly a third of a typical portfolio is private, and for those customers the radar is thinner: no filings, no market signal, and a greater reliance on payment behaviour from SAP. That is one reason the forecast and the score are built to work on SAP data alone.</p>
+</section>
+<section class="panel" id="integration" role="tabpanel" aria-labelledby="tab-integration" tabindex="0" data-print-title="4. How it connects — integration architecture" hidden>
+  <h2 id="int-intro">How it connects</h2>
+  <p>Seven questions come up whenever this project meets an SAP or IT team. They are answered below in the order they are usually asked, with a diagram and the two tables that matter: what refreshes when, and what a normal day looks like.</p>
+  <ul class="jump" data-jump></ul>
+
+  <h3 id="int-link">1. Can it link to SAP, and how?</h3>
+  <p>Yes, and there are three realistic read-only routes. All three are in normal use at manufacturers of Jabil's size, and we would take whichever Jabil prefers. None of them requires a change to how SAP works today.</p>
+
+  <h4>(a) Through Jabil's existing data platform, BW or CDS views</h4>
+  <p>If the current CMD already draws receivables, orders, stock and limits from a governed layer, we would read from that same layer. This is the least new work for IT, it reuses authorisations and definitions that already exist, and the figures match what the credit team sees today. The trade-off is that the layer may not expose the item-level history we need, so a change request would go into the platform team's queue.</p>
+
+  <h4>(b) An OData service exposed by SAP Gateway</h4>
+  <p>SAP publishes a read-only service and we call it on a schedule. Nothing to copy, no files to manage, and the data is close to real time. The trade-offs: the service has to be built and released by Jabil, and pulling three years of history through a service is slower and heavier than reading a file.</p>
+
+  <h4>(c) A scheduled file drop</h4>
+  <p>Jabil runs a query or a report on a schedule and writes CSV or Parquet to a landing folder we can read. This is usually the easiest option to approve, needs no service development, and is simple to audit because every run leaves a dated file. The trade-off is that it is batch only — typically a day behind — and the extract definition has to be maintained.</p>
+
+  <div class="callout callout-forest">
+    <div class="callout-head">
+      <svg class="ico" aria-hidden="true" focusable="false"><use href="#i-shield"/></svg>
+      <div>
+        <h3>We only ever read</h3>
+        <p>In all three cases the connection is read-only. We never write to SAP, never post a document, and never need a user with change authority. A dedicated read-only account, or an extract run under an existing one, is all we would ask for. Customer names can be masked in the extract: a stable key and a masked name are enough for the models.</p>
+      </div>
+    </div>
+  </div>
+
+  <h3 id="int-leaves">2. What actually leaves Jabil's network?</h3>
+  <p>Nothing that identifies a customer. The only outbound requests are to public sources, and the only values in those requests are public identifiers: a ticker, a CIK number, an LEI, or a company name that is already on a public register. Customer codes, names, addresses, invoice numbers, amounts and limits stay inside the network.</p>
+  <p>Where we score text, the language model runs locally, so the text itself is not sent anywhere. Every outbound call is logged with the identifier it used, which means the claim can be checked rather than believed.</p>
+
+  <h3 id="int-runs">3. Where does it run?</h3>
+  <p>On one virtual machine, or in one slot on Jabil's container platform, inside the network. One Docker container runs the pipeline; a second serves the screens. PostgreSQL holds four schemas — raw, clean, signals and results — so that any figure on a screen can be traced back to the row it came from. Python runs the pipeline: extract, match, features, models. The screens are a small React web app served from the same host, or Power BI if Jabil would rather keep reporting in the existing stack. Nothing is exposed to the internet, and analysts reach it on the internal network.</p>
+
+  <figure class="figure">
+    <svg class="svg-label" viewBox="0 0 1120 660" role="img" aria-labelledby="arch-title arch-desc">
+      <title id="arch-title">Headroom integration architecture</title>
+      <desc id="arch-desc">Read-only extraction from SAP through one of three routes into a landing zone, then a four-stage pipeline into PostgreSQL, then read-only screens for credit analysts. Only public identifiers cross the network boundary, to and from public sources.</desc>
+      <rect x="16" y="54" width="684" height="556" rx="20" fill="#FBFDF9" stroke="#8CC0A0" stroke-width="1.4" stroke-dasharray="7 5"/>
+      <text x="40" y="84" font-size="12.5" font-weight="700" fill="#0E4A2F">Jabil network — customer data stays inside</text>
+
+      <rect x="36" y="104" width="172" height="104" rx="12" fill="#EAF6EC" stroke="#8CC0A0" stroke-width="1.2"/>
+      <text x="52" y="140" font-size="15" font-weight="700" fill="#0E4A2F">SAP</text>
+      <text x="52" y="162" font-size="11" fill="#10261C">AR, orders, stock, limits</text>
+      <text x="52" y="182" font-size="11" fill="#1F7A4D">read-only, no write user</text>
+
+      <line x1="208" y1="156" x2="226" y2="156" stroke="#6FBF8B" stroke-width="1.4"/>
+      <line x1="226" y1="126" x2="226" y2="254" stroke="#6FBF8B" stroke-width="1.4"/>
+      <line x1="226" y1="126" x2="248" y2="126" stroke="#6FBF8B" stroke-width="1.4" marker-end="url(#arrow-soft)"/>
+      <line x1="226" y1="190" x2="248" y2="190" stroke="#6FBF8B" stroke-width="1.4" marker-end="url(#arrow-soft)"/>
+      <line x1="226" y1="254" x2="248" y2="254" stroke="#6FBF8B" stroke-width="1.4" marker-end="url(#arrow-soft)"/>
+
+      <rect x="248" y="100" width="252" height="52" rx="10" fill="#FFFFFF" stroke="#DCEBE0" stroke-width="1.2"/>
+      <text x="262" y="122" font-size="12" font-weight="600" fill="#10261C">(a) Data platform, BW or CDS views</text>
+      <text x="262" y="139" font-size="10.5" fill="#46584D">reuses existing definitions and access</text>
+      <rect x="248" y="164" width="252" height="52" rx="10" fill="#FFFFFF" stroke="#DCEBE0" stroke-width="1.2"/>
+      <text x="262" y="186" font-size="12" font-weight="600" fill="#10261C">(b) OData service via SAP Gateway</text>
+      <text x="262" y="203" font-size="10.5" fill="#46584D">near real time, service release needed</text>
+      <rect x="248" y="228" width="252" height="52" rx="10" fill="#FFFFFF" stroke="#DCEBE0" stroke-width="1.2"/>
+      <text x="262" y="250" font-size="12" font-weight="600" fill="#10261C">(c) Scheduled file drop</text>
+      <text x="262" y="267" font-size="10.5" fill="#46584D">simplest to approve, one day behind</text>
+
+      <line x1="500" y1="126" x2="512" y2="126" stroke="#6FBF8B" stroke-width="1.4"/>
+      <line x1="500" y1="254" x2="512" y2="254" stroke="#6FBF8B" stroke-width="1.4"/>
+      <line x1="512" y1="126" x2="512" y2="254" stroke="#6FBF8B" stroke-width="1.4"/>
+      <line x1="512" y1="190" x2="524" y2="190" stroke="#6FBF8B" stroke-width="1.4" marker-end="url(#arrow-soft)"/>
+
+      <rect x="524" y="140" width="148" height="100" rx="12" fill="#EAF6EC" stroke="#8CC0A0" stroke-width="1.2"/>
+      <text x="538" y="172" font-size="12.5" font-weight="700" fill="#0E4A2F">Landing zone</text>
+      <text x="538" y="192" font-size="10.5" fill="#10261C">dated raw copy</text>
+      <text x="538" y="208" font-size="10.5" fill="#10261C">kept for audit</text>
+
+      <path d="M598 240V276Q598 284 590 284H119Q111 284 111 292V312" fill="none" stroke="#6FBF8B" stroke-width="1.4" marker-end="url(#arrow-soft)"/>
+
+      <rect x="36" y="312" width="150" height="80" rx="10" fill="#FFFFFF" stroke="#DCEBE0" stroke-width="1.2"/>
+      <text x="52" y="344" font-size="12.5" font-weight="700" fill="#0E4A2F">Raw</text>
+      <text x="52" y="364" font-size="10.5" fill="#46584D">as received</text>
+      <line x1="186" y1="352" x2="198" y2="352" stroke="#6FBF8B" stroke-width="1.4" marker-end="url(#arrow-soft)"/>
+      <rect x="198" y="312" width="150" height="80" rx="10" fill="#FFFFFF" stroke="#DCEBE0" stroke-width="1.2"/>
+      <text x="214" y="344" font-size="12.5" font-weight="700" fill="#0E4A2F">Clean</text>
+      <text x="214" y="364" font-size="10.5" fill="#46584D">checked and matched</text>
+      <line x1="348" y1="352" x2="360" y2="352" stroke="#6FBF8B" stroke-width="1.4" marker-end="url(#arrow-soft)"/>
+      <rect x="360" y="312" width="150" height="80" rx="10" fill="#FFFFFF" stroke="#DCEBE0" stroke-width="1.2"/>
+      <text x="376" y="344" font-size="12.5" font-weight="700" fill="#0E4A2F">Signals</text>
+      <text x="376" y="360" font-size="10.5" fill="#46584D">one row per customer</text>
+      <text x="376" y="376" font-size="10.5" fill="#46584D">each day</text>
+      <line x1="510" y1="352" x2="522" y2="352" stroke="#6FBF8B" stroke-width="1.4" marker-end="url(#arrow-soft)"/>
+      <rect x="522" y="312" width="150" height="80" rx="10" fill="#FFFFFF" stroke="#DCEBE0" stroke-width="1.2"/>
+      <text x="538" y="344" font-size="12.5" font-weight="700" fill="#0E4A2F">Results</text>
+      <text x="538" y="364" font-size="10.5" fill="#46584D">scores and reasons</text>
+
+      <line x1="597" y1="392" x2="597" y2="436" stroke="#6FBF8B" stroke-width="1.4" marker-end="url(#arrow-soft)"/>
+      <rect x="36" y="436" width="636" height="64" rx="12" fill="#EAF6EC" stroke="#8CC0A0" stroke-width="1.2"/>
+      <text x="54" y="464" font-size="12.5" font-weight="700" fill="#0E4A2F">PostgreSQL — four schemas: raw, clean, signals, results</text>
+      <text x="54" y="484" font-size="10.5" fill="#10261C">every screen figure traces back to the row it came from</text>
+
+      <line x1="186" y1="500" x2="186" y2="520" stroke="#6FBF8B" stroke-width="1.4" marker-end="url(#arrow-soft)"/>
+      <rect x="36" y="520" width="290" height="64" rx="12" fill="#FFFFFF" stroke="#DCEBE0" stroke-width="1.2"/>
+      <text x="54" y="548" font-size="12.5" font-weight="700" fill="#0E4A2F">Serve: web app or Power BI</text>
+      <text x="54" y="568" font-size="10.5" fill="#46584D">read-only screens on the internal network</text>
+      <line x1="326" y1="552" x2="350" y2="552" stroke="#6FBF8B" stroke-width="1.4" marker-end="url(#arrow-soft)"/>
+      <rect x="350" y="520" width="322" height="64" rx="12" fill="#FFFFFF" stroke="#DCEBE0" stroke-width="1.2"/>
+      <text x="368" y="548" font-size="12.5" font-weight="700" fill="#0E4A2F">Credit analyst and credit manager</text>
+      <text x="368" y="568" font-size="10.5" fill="#46584D">read the list; every decision stays with them</text>
+
+      <rect x="830" y="100" width="258" height="232" rx="14" fill="#D4F1EE" stroke="#8CC0A0" stroke-width="1.2"/>
+      <text x="848" y="132" font-size="13.5" font-weight="700" fill="#0A5F58">Public sources</text>
+      <text x="848" y="162" font-size="11.5" fill="#10261C">SEC EDGAR — filings, Form 8-K</text>
+      <text x="848" y="186" font-size="11.5" fill="#10261C">GLEIF — legal entity identity</text>
+      <text x="848" y="210" font-size="11.5" fill="#10261C">GDELT — coded news events</text>
+      <text x="848" y="234" font-size="11.5" fill="#10261C">FRED and World Bank — sector</text>
+      <text x="848" y="258" font-size="11.5" fill="#10261C">Share prices — listed names only</text>
+      <text x="848" y="292" font-size="10.5" fill="#0A5F58">Free first. None of these sources</text>
+      <text x="848" y="308" font-size="10.5" fill="#0A5F58">ever receives a customer name.</text>
+
+      <text x="764" y="150" font-size="10.5" fill="#0E4A2F" text-anchor="middle">we send public</text>
+      <text x="764" y="164" font-size="10.5" fill="#0E4A2F" text-anchor="middle">identifiers only</text>
+      <line x1="700" y1="178" x2="830" y2="178" stroke="#1F7A4D" stroke-width="1.6" marker-end="url(#arrow)"/>
+      <line x1="830" y1="252" x2="704" y2="252" stroke="#1F7A4D" stroke-width="1.6" marker-end="url(#arrow)"/>
+      <text x="764" y="276" font-size="10.5" fill="#0E4A2F" text-anchor="middle">public data</text>
+      <text x="764" y="290" font-size="10.5" fill="#0E4A2F" text-anchor="middle">comes back</text>
+    </svg>
+    <figcaption>The same picture in words: SAP is read, never written to. One of three extraction routes lands a dated copy inside the network. Four pipeline stages turn that copy into signals and results in PostgreSQL. Screens read the database and stay read-only. The only traffic across the network boundary carries a public identifier out and public data back.</figcaption>
+  </figure>
+
+  <h3 id="int-refresh">4. The refresh schedule</h3>
+  <p>Each source is polled only as often as it really changes. Nothing here is a live stream, because nothing here needs to be.</p>
+  <div class="toolbar">
+    <span class="count">Eight scheduled jobs</span>
+    <button class="btn copy" type="button" data-copy="refresh-table" data-label="Copy as TSV"><svg aria-hidden="true" focusable="false"><use href="#i-copy"/></svg><span>Copy as TSV</span></button>
+  </div>
+  <div class="table-wrap">
+    <table id="refresh-table">
+      <caption>Every row is a scheduled job. Frequencies are the design intent; they can be relaxed if Jabil prefers a quieter schedule.</caption>
+      <thead>
+        <tr><th scope="col">Source or step</th><th scope="col">How often</th><th scope="col">Why that rate</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>SAP extract</strong></td><td class="nowrap">Nightly, changed rows only</td><td class="wide">Credit decisions are made daily, so a nightly copy is enough. A delta extract keeps the load on SAP small and the transfer short.</td></tr>
+        <tr><td><strong>SEC Form 8-K</strong></td><td class="nowrap">Every 15 minutes</td><td class="wide">Material events are filed within four business days, and the credit team wants them the same working day. A 15-minute poll is well inside SEC fair-access limits.</td></tr>
+        <tr><td><strong>GDELT news</strong></td><td class="nowrap">Every 15 minutes</td><td class="wide">The feed updates continuously; 15 minutes is the smallest step that changes a decision.</td></tr>
+        <tr><td><strong>Share prices</strong></td><td class="nowrap">Each evening, after close</td><td class="wide">Prices only change while a market is open. There is nothing to gain from polling during the day.</td></tr>
+        <tr><td><strong>GLEIF and company identifiers</strong></td><td class="nowrap">Daily</td><td class="wide">Legal identity and ownership change slowly. A daily check catches new registrations and parent changes.</td></tr>
+        <tr><td><strong>FRED and World Bank</strong></td><td class="nowrap">Weekly</td><td class="wide">Most series are monthly or quarterly. A weekly check is already more often than the data changes.</td></tr>
+        <tr><td><strong>Analyst decisions</strong></td><td class="nowrap">On save</td><td class="wide">A decision is recorded the moment it is made, so the audit trail matches the conversation in the credit meeting.</td></tr>
+        <tr><td><strong>Full model run</strong></td><td class="nowrap">Nightly, after the extract</td><td class="wide">Every customer is scored once a day, on the same data, so the list is comparable from one morning to the next.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 id="int-day">5. A normal day</h3>
+  <div class="toolbar">
+    <span class="count">Seven moments in the day</span>
+    <button class="btn copy" type="button" data-copy="day-table" data-label="Copy as TSV"><svg aria-hidden="true" focusable="false"><use href="#i-copy"/></svg><span>Copy as TSV</span></button>
+  </div>
+  <div class="table-wrap">
+    <table id="day-table">
+      <caption>Times are illustrative and would be set to suit Jabil's batch window.</caption>
+      <thead>
+        <tr><th scope="col">Time</th><th scope="col">What happens</th><th scope="col">Why it is at that time</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="nowrap">01:00</td><td><strong>SAP copy lands</strong></td><td class="wide">The nightly delta extract arrives in the landing zone and is written to the raw schema unchanged.</td></tr>
+        <tr><td class="nowrap">02:00</td><td><strong>Checks and matching</strong></td><td class="wide">Quality rules run, then each customer is matched to a legal entity. Rows that fail are quarantined with a reason.</td></tr>
+        <tr><td class="nowrap">03:00</td><td><strong>Models run</strong></td><td class="wide">Forecast, score and reasons are produced for every customer, on the same data snapshot.</td></tr>
+        <tr><td class="nowrap">05:00</td><td><strong>Results published</strong></td><td class="wide">The screens and the watchlist refresh before anyone arrives.</td></tr>
+        <tr><td class="nowrap">08:00</td><td><strong>Analysts open the list</strong></td><td class="wide">The morning review starts from a finished, ranked list rather than from a query.</td></tr>
+        <tr><td class="nowrap">Within the hour</td><td><strong>A serious filing reaches the analyst</strong></td><td class="wide">An 8-K on a watched customer raises an alert as soon as the next poll returns, without waiting for the nightly run.</td></tr>
+        <tr><td class="nowrap">Under 2 minutes</td><td><strong>Refresh one customer</strong></td><td class="wide">The Refresh button re-runs one customer end to end, so an analyst can check a name before a call.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 id="int-pipeline">6. The pipeline stages</h3>
+  <p>Five stages, in this order, every day. Each stage keeps its output, so any figure on a screen can be followed back to the row it came from.</p>
+  <div class="stage-list">
+    <div class="stage"><span class="idx">Stage 1</span><h4>Raw</h4><p>Exactly what arrived, with the file or the response and the time it arrived. Kept for audit and so that any day can be re-run without asking SAP again.</p></div>
+    <div class="stage"><span class="idx">Stage 2</span><h4>Clean</h4><p>Typed, de-duplicated, checked against a rule set, and matched to the right legal entity. Rows that fail are quarantined with a reason, not dropped silently.</p></div>
+    <div class="stage"><span class="idx">Stage 3</span><h4>Signals</h4><p>One row per customer per day: the measures the models read, such as DPD buckets, payment delay, order momentum, limit headroom, news tone and the market signal.</p></div>
+    <div class="stage"><span class="idx">Stage 4</span><h4>Results</h4><p>Scores, forecasts, drivers and one suggested next step, written once per run so that any past run can be reproduced exactly.</p></div>
+    <div class="stage"><span class="idx">Stage 5</span><h4>Serve</h4><p>The screens and the small API they read. Read-only, always showing the latest completed run, with the run time printed on every page.</p></div>
+  </div>
+
+  <h3 id="int-orchestration">7. Orchestration</h3>
+  <p>An orchestrator runs the schedule, rather than plain cron. Apache Airflow is the obvious choice and is free; if Jabil already runs a scheduler, we would use that instead and keep the same job definitions. Cron can start a job. It cannot tell you what ran, in what order, what it depended on, or why yesterday's numbers differ from today's — and those are exactly the questions an auditor asks.</p>
+  <ul>
+    <li><strong>Order</strong> — extract, then checks, then matching, then models, then publish. Nothing starts before what it depends on has finished.</li>
+    <li><strong>Retries</strong> — a failed step retries on its own, and only fails the run after the retries are exhausted. A source being briefly unavailable does not cost the day's list.</li>
+    <li><strong>Audit log</strong> — every run is recorded with its start, finish, inputs, outputs and row counts. That record is the evidence that yesterday's list was built from yesterday's data.</li>
+    <li><strong>Re-runs</strong> — a single day, or a single customer, can be re-run without disturbing anything else, which is what makes a back-test honest.</li>
+  </ul>
+</section>
+<section class="panel" id="asks" role="tabpanel" aria-labelledby="tab-asks" tabindex="0" data-print-title="5. What we need from Jabil, and by when" hidden>
+  <h2 id="asks-intro">What we need from you, and by when</h2>
+  <p>Nine items. One of them is a hard prerequisite; the rest have a workable fallback, and the fallback is written down so that nothing stalls silently. Weeks are counted from the start of the project.</p>
+  <div class="callout callout-forest">
+    <div class="callout-head">
+      <svg class="ico" aria-hidden="true" focusable="false"><use href="#i-mark"/></svg>
+      <div>
+        <p><strong>None of these needs any change to Jabil's live systems.</strong> Week 1 begins on 11 January 2027.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <span class="count">Nine requests</span>
+    <button class="btn copy" type="button" data-copy="asks-table" data-label="Copy as TSV"><svg aria-hidden="true" focusable="false"><use href="#i-copy"/></svg><span>Copy as TSV</span></button>
+  </div>
+  <div class="table-wrap">
+    <table id="asks-table">
+      <caption>The highlighted row is the one item with no fallback.</caption>
+      <thead>
+        <tr>
+          <th scope="col">What we need</th>
+          <th scope="col">Details</th>
+          <th scope="col">Needed by</th>
+          <th scope="col">If it is not available, we&hellip;</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="row-required">
+          <td><strong>Agreements</strong></td>
+          <td class="wide">NDA and project agreement through NUS SCALE, including the terms for using Jabil data in NUS reports.</td>
+          <td class="nowrap">Before week 1</td>
+          <td class="wide">Cannot start: this one is required.</td>
+        </tr>
+        <tr>
+          <td><strong>SAP data extract</strong></td>
+          <td class="wide">Invoice and payment records, orders, stock and limits, covering about three years. Masked names are fine.</td>
+          <td class="nowrap">Weeks 1&ndash;2</td>
+          <td class="wide">Use monthly totals and start weekly snapshots, which weakens the forecast and shortens the back-test.</td>
+        </tr>
+        <tr>
+          <td><strong>Data owner contact</strong></td>
+          <td class="wide">An SAP or IT contact who can explain the tables and confirm where each dataset really lives.</td>
+          <td class="nowrap">Week 1</td>
+          <td class="wide">Slower data map, and more questions by email instead of a short conversation.</td>
+        </tr>
+        <tr>
+          <td><strong>Credit team time</strong></td>
+          <td class="wide">Two or three analysts and a manager, about one hour a week, to review the design and the output.</td>
+          <td class="nowrap">Throughout</td>
+          <td class="wide">Fewer design rounds, and a tool built on our assumptions rather than on the team's week. More risk of it going unused.</td>
+        </tr>
+        <tr>
+          <td><strong>Customer IDs</strong></td>
+          <td class="wide">An LEI or DUNS number on customer records, if any is held. A global identifier is the cheapest accuracy gain available.</td>
+          <td class="nowrap">Week 3</td>
+          <td class="wide">Match by name and address, with an analyst checking each match by hand.</td>
+        </tr>
+        <tr>
+          <td><strong>Licensed credit data</strong></td>
+          <td class="wide">Any credit data Jabil already pays for: ratings, CDS spreads, news or default benchmarks.</td>
+          <td class="nowrap">Week 3</td>
+          <td class="wide">Free public sources only. The radar still works; calibration to real default rates becomes harder.</td>
+        </tr>
+        <tr>
+          <td><strong>Secure workspace</strong></td>
+          <td class="wide">A Jabil laptop, a VM, or another approved environment where the tool can run inside the network.</td>
+          <td class="nowrap">Week 4</td>
+          <td class="wide">Build on synthetic data and move the work inside later, which costs several weeks and delays the first real back-test.</td>
+        </tr>
+        <tr>
+          <td><strong>Rules for public data and AI</strong></td>
+          <td class="wide">Guidance on querying public sources from inside the network, and on using language models on filers' and news text.</td>
+          <td class="nowrap">Week 4</td>
+          <td class="wide">Run without outside data and without the AI-written summary. The forecast and the score still run on SAP data alone.</td>
+        </tr>
+        <tr>
+          <td><strong>Handover owner</strong></td>
+          <td class="wide">A Jabil credit or IT owner who will receive the tool, the documentation and the model constants in week 20.</td>
+          <td class="nowrap">Week 20</td>
+          <td class="wide">A documentation-only handover, with nobody named to keep the tool running after the capstone ends.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="small">Weeks run from 11 January 2027 to 18 June 2027. If a date is difficult, tell us early and we will re-plan around it rather than work around it.</p>
+</section>
+
+<section class="panel" id="checklist" role="tabpanel" aria-labelledby="tab-checklist" tabindex="0" data-print-title="6. Real-data readiness checklist" hidden>
+  <h2 id="ck-intro">Real-data readiness checklist</h2>
+  <p>These are the questions we would ask in the first working session with Jabil. Every one of them can be answered yes or no, and each answer changes what we build. Work through them together, or send the page back with the boxes ticked.</p>
+
+  <div class="progress-card">
+    <div class="progress-top">
+      <span class="progress-text" id="check-progress">0 of 19 answered</span>
+      <div class="btn-row">
+        <button class="btn copy" type="button" data-copy="checklist" data-label="Copy answers as TSV"><svg aria-hidden="true" focusable="false"><use href="#i-copy"/></svg><span>Copy answers as TSV</span></button>
+        <button class="btn" type="button" id="check-reset">Clear answers</button>
+      </div>
+    </div>
+    <div class="bar" role="presentation"><span id="check-bar"></span></div>
+    <p class="small" id="check-note">Nothing answered yet.</p>
+    <p class="small">Answers are kept in this browser only, so they survive a refresh and nothing is sent anywhere. Clearing your browser data clears them.</p>
+  </div>
+
+  <div class="check-group">
+    <h3 id="ck-agreements"><svg aria-hidden="true" focusable="false"><use href="#i-shield"/></svg>Agreements</h3>
+    <ul class="check-list">
+      <li>
+        <label class="check" for="ck-nda">
+          <input type="checkbox" id="ck-nda" data-key="nda">
+          <span>
+            <span class="q">Has the NDA been signed and the project agreement completed through NUS SCALE?</span>
+            <span class="why">Nothing can begin before this, and it sets the terms for using Jabil data in NUS reports.</span>
+          </span>
+        </label>
+      </li>
+      <li>
+        <label class="check" for="ck-terms">
+          <input type="checkbox" id="ck-terms" data-key="terms">
+          <span>
+            <span class="q">Are the terms for using Jabil data in NUS teaching and reporting agreed in writing?</span>
+            <span class="why">The capstone is assessed and the report may quote aggregate figures. This is far easier to settle in week 1 than in week 18.</span>
+          </span>
+        </label>
+      </li>
+    </ul>
+  </div>
+
+  <div class="check-group">
+    <h3 id="ck-sap-access"><svg aria-hidden="true" focusable="false"><use href="#i-sap"/></svg>SAP access</h3>
+    <ul class="check-list">
+      <li>
+        <label class="check" for="ck-extract">
+          <input type="checkbox" id="ck-extract" data-key="extract">
+          <span>
+            <span class="q">Can Jabil provide a read-only extract covering receivables, customer orders, dedicated stock, customer master and credit limits?</span>
+            <span class="why">Those five datasets carry the forecast and the score. Everything else sharpens them.</span>
+          </span>
+        </label>
+      </li>
+      <li>
+        <label class="check" for="ck-contact">
+          <input type="checkbox" id="ck-contact" data-key="contact">
+          <span>
+            <span class="q">Is there an SAP or IT contact who can explain the tables and answer schema questions?</span>
+            <span class="why">Every SAP name in this document is indicative. Somebody has to say where the data really lives.</span>
+          </span>
+        </label>
+      </li>
+      <li>
+        <label class="check" for="ck-route">
+          <input type="checkbox" id="ck-route" data-key="route">
+          <span>
+            <span class="q">Which extraction route does Jabil prefer: the existing data platform or BW, an OData service, or a scheduled file drop?</span>
+            <span class="why">It changes the build, not the models, and it decides how early the real data work can start.</span>
+          </span>
+        </label>
+      </li>
+      <li>
+        <label class="check" for="ck-env">
+          <input type="checkbox" id="ck-env" data-key="env">
+          <span>
+            <span class="q">Is there an approved environment where the tool can run inside the network, such as a laptop, a VM or a container platform?</span>
+            <span class="why">Without it we build on synthetic data and move the work inside later, which costs weeks and delays the first real back-test.</span>
+          </span>
+        </label>
+      </li>
+    </ul>
+  </div>
+
+  <div class="check-group">
+    <h3 id="ck-quality"><svg aria-hidden="true" focusable="false"><use href="#i-db"/></svg>Data quality questions</h3>
+    <ul class="check-list">
+      <li>
+        <label class="check" for="ck-dates">
+          <input type="checkbox" id="ck-dates" data-key="dates">
+          <span>
+            <span class="q">Do invoice-level due dates and paid dates both exist, or only monthly totals?</span>
+            <span class="why">The forecast needs both dates on the same invoice. Without them we can measure how much is late, but not how late.</span>
+          </span>
+        </label>
+      </li>
+      <li>
+        <label class="check" for="ck-history">
+          <input type="checkbox" id="ck-history" data-key="history">
+          <span>
+            <span class="q">How many years of invoice history are retained?</span>
+            <span class="why">Three years covers a full cycle and gives the back-test room. Less means a shorter test and a weaker claim about accuracy.</span>
+          </span>
+        </label>
+      </li>
+      <li>
+        <label class="check" for="ck-stock">
+          <input type="checkbox" id="ck-stock" data-key="stock">
+          <span>
+            <span class="q">Can stock or inventory be linked to a specific customer, through the special stock indicator?</span>
+            <span class="why">Dedicated stock is part of exposure. Without the link it cannot be attributed to a customer, so it cannot be forecast for one.</span>
+          </span>
+        </label>
+      </li>
+      <li>
+        <label class="check" for="ck-po">
+          <input type="checkbox" id="ck-po" data-key="po">
+          <span>
+            <span class="q">Does "purchase order" in the current dashboard mean customer orders to Jabil?</span>
+            <span class="why">The forecast needs open customer orders with confirmed delivery dates, not Jabil's own purchasing commitments.</span>
+          </span>
+        </label>
+      </li>
+      <li>
+        <label class="check" for="ck-limits">
+          <input type="checkbox" id="ck-limits" data-key="limits">
+          <span>
+            <span class="q">Are credit-limit changes historised, or is only the current limit stored?</span>
+            <span class="why">Limit history is what lets us test whether a breach was foreseeable, which is the point of the forecast.</span>
+          </span>
+        </label>
+      </li>
+      <li>
+        <label class="check" for="ck-lei">
+          <input type="checkbox" id="ck-lei" data-key="lei">
+          <span>
+            <span class="q">Do customer master records carry an LEI, a DUNS number or any other global company identifier?</span>
+            <span class="why">A global identifier makes external matching automatic. Without one, an analyst checks every match by hand.</span>
+          </span>
+        </label>
+      </li>
+      <li>
+        <label class="check" for="ck-parent">
+          <input type="checkbox" id="ck-parent" data-key="parent">
+          <span>
+            <span class="q">Can customer records be linked to a parent group or hierarchy node?</span>
+            <span class="why">Risk usually arrives at group level. Without the roll-up, trouble in one entity can look like trouble in a healthy group.</span>
+          </span>
+        </label>
+      </li>
+      <li>
+        <label class="check" for="ck-disputes">
+          <input type="checkbox" id="ck-disputes" data-key="disputes">
+          <span>
+            <span class="q">Where are disputes and limit-extension requests recorded today?</span>
+            <span class="why">Disputes and repeated extension requests are early signs of stress, and they often sit outside SAP in email or a spreadsheet.</span>
+          </span>
+        </label>
+      </li>
+    </ul>
+  </div>
+
+  <div class="check-group">
+    <h3 id="ck-external"><svg aria-hidden="true" focusable="false"><use href="#i-external"/></svg>External data decisions</h3>
+    <ul class="check-list">
+      <li>
+        <label class="check" for="ck-licence">
+          <input type="checkbox" id="ck-licence" data-key="licence">
+          <span>
+            <span class="q">Which credit data does Jabil already license: ratings, CDS spreads, news or default benchmarks?</span>
+            <span class="why">Reusing an existing licence avoids new cost and a new procurement cycle, and it may cover more customers than the free sources do.</span>
+          </span>
+        </label>
+      </li>
+      <li>
+        <label class="check" for="ck-public">
+          <input type="checkbox" id="ck-public" data-key="public">
+          <span>
+            <span class="q">What are the rules for querying public sources from inside Jabil's network?</span>
+            <span class="why">This decides whether the external radar runs at all, and whether calls go direct or through a proxy.</span>
+          </span>
+        </label>
+      </li>
+      <li>
+        <label class="check" for="ck-ai">
+          <input type="checkbox" id="ck-ai" data-key="ai">
+          <span>
+            <span class="q">What are the rules for using language models, and may we run one locally to score text?</span>
+            <span class="why">The written reasons are the part of the tool an analyst repeats to a customer. If an AI summary is not permitted, we fall back to rule-based reasons, which is workable but plainer.</span>
+          </span>
+        </label>
+      </li>
+    </ul>
+  </div>
+
+  <div class="check-group">
+    <h3 id="ck-people"><svg aria-hidden="true" focusable="false"><use href="#i-people"/></svg>People</h3>
+    <ul class="check-list">
+      <li>
+        <label class="check" for="ck-owner">
+          <input type="checkbox" id="ck-owner" data-key="owner">
+          <span>
+            <span class="q">Who is the SAP or IT contact, and who will own the tool at handover?</span>
+            <span class="why">A named contact from week 1 keeps questions moving. A named handover owner in week 20 keeps the tool alive after the capstone ends.</span>
+          </span>
+        </label>
+      </li>
+      <li>
+        <label class="check" for="ck-time">
+          <input type="checkbox" id="ck-time" data-key="time">
+          <span>
+            <span class="q">Can two or three analysts and a credit manager give about one hour a week?</span>
+            <span class="why">The design is reviewed with them each week. Fewer sessions means a tool built on our assumptions rather than on the team's actual week.</span>
+          </span>
+        </label>
+      </li>
+    </ul>
+  </div>
+
+  <div class="callout callout-teal">
+    <div class="callout-head">
+      <svg class="ico" aria-hidden="true" focusable="false"><use href="#i-check"/></svg>
+      <div>
+        <h3>What happens with the answers</h3>
+        <p>Every "no" is as useful as every "yes". A "no" tells us which fallback to design in from the start, and it goes on the limitations page of the final report rather than being discovered in week 19.</p>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer class="foot">
+  <div class="wrap foot-inner">
+    <div>
+      <p><strong>Headroom — data requirements.</strong> Prepared by the NUS MSc capstone team for Jabil, project IND2620-0011, for the 23 weeks beginning 11 January 2027.</p>
+      <p>No Jabil data is included in this document, and none has been received. Every coverage figure marked illustrative is the team's own estimate from a sample portfolio.</p>
+    </div>
+    <div>
+      <p>This page opens offline from a single file. Use the Print command for a paper copy: all six sections expand and print in order.</p>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+
+  var TABS = ["overview", "sap", "external", "integration", "asks", "checklist"];
+  var DEFAULT_TAB = "overview";
+
+  function $(sel, ctx) { return (ctx || document).querySelector(sel); }
+  function $$(sel, ctx) { return Array.prototype.slice.call((ctx || document).querySelectorAll(sel)); }
+
+  /* ------------------------------------------------------------- tab logic */
+  var tablist = $("#tablist");
+  var tabs = tablist ? $$("[role=tab]", tablist) : [];
+  var panels = {};
+  TABS.forEach(function (id) { panels[id] = document.getElementById(id); });
+
+  function activate(id, focus) {
+    if (TABS.indexOf(id) < 0) { id = DEFAULT_TAB; }
+    tabs.forEach(function (t) {
+      var on = t.getAttribute("data-tab") === id;
+      t.setAttribute("aria-selected", on ? "true" : "false");
+      t.tabIndex = on ? 0 : -1;
+      if (on && focus) { t.focus(); }
+    });
+    TABS.forEach(function (key) {
+      if (panels[key]) { panels[key].hidden = (key !== id); }
+    });
+  }
+
+  function resolveHash() {
+    var raw = (window.location.hash || "").replace(/^#/, "");
+    if (!raw) { return DEFAULT_TAB; }
+    if (TABS.indexOf(raw) >= 0) { return raw; }
+    var el = document.getElementById(raw);
+    if (el) {
+      var panel = el.closest ? el.closest(".panel") : null;
+      if (panel && TABS.indexOf(panel.id) >= 0) { return panel.id; }
+    }
+    return null;
+  }
+
+  function go(id, focus) {
+    try { window.history.replaceState(null, "", "#" + id); }
+    catch (err) { window.location.hash = id; }
+    activate(id, focus);
+  }
+
+  tabs.forEach(function (t) {
+    t.addEventListener("click", function (e) {
+      e.preventDefault();
+      go(t.getAttribute("data-tab"), true);
+    });
+  });
+
+  if (tablist) {
+    tablist.addEventListener("keydown", function (e) {
+      var i = tabs.indexOf(document.activeElement);
+      if (i < 0) { return; }
+      var next = null;
+      if (e.key === "ArrowRight") { next = (i + 1) % tabs.length; }
+      else if (e.key === "ArrowLeft") { next = (i - 1 + tabs.length) % tabs.length; }
+      else if (e.key === "Home") { next = 0; }
+      else if (e.key === "End") { next = tabs.length - 1; }
+      if (next === null) { return; }
+      e.preventDefault();
+      go(tabs[next].getAttribute("data-tab"), true);
+    });
+  }
+
+  window.addEventListener("hashchange", function () {
+    var id = resolveHash();
+    if (id === null) { return; }
+    activate(id, false);
+    var el = document.getElementById((window.location.hash || "").replace(/^#/, ""));
+    if (el && el.id !== id && el.scrollIntoView) {
+      window.requestAnimationFrame(function () { el.scrollIntoView({ block: "start" }); });
+    }
+  });
+
+  activate(resolveHash() || DEFAULT_TAB, false);
+
+  /* ------------------------------------------------------- jump lists */
+  $$("[data-jump]").forEach(function (host) {
+    var panel = host.closest(".panel");
+    if (!panel) { return; }
+    var heads = $$("h2[id], h3[id]", panel);
+    if (heads.length < 2) { host.hidden = true; return; }
+    var lead = document.createElement("li");
+    lead.className = "jump-label";
+    lead.textContent = "On this tab:";
+    host.appendChild(lead);
+    heads.forEach(function (h) {
+      var li = document.createElement("li");
+      var a = document.createElement("a");
+      a.href = "#" + h.id;
+      a.textContent = (h.textContent || "").replace(/\s+/g, " ").trim();
+      li.appendChild(a);
+      host.appendChild(li);
+    });
+  });
+
+  /* ---------------------------------------------------------- searching */
+  function wireFilter(inputId, listId, countId, emptyId, itemSel, unit) {
+    var input = document.getElementById(inputId);
+    var list = document.getElementById(listId);
+    if (!input || !list) { return; }
+    var items = $$(itemSel, list);
+    var counter = document.getElementById(countId);
+    var empty = document.getElementById(emptyId);
+    var total = items.length;
+
+    function run() {
+      var q = input.value.trim().toLowerCase();
+      var terms = q ? q.split(/\s+/) : [];
+      var shown = 0;
+      items.forEach(function (el) {
+        var hay = (el.textContent || "").toLowerCase().replace(/\s+/g, " ");
+        var ok = terms.every(function (t) { return hay.indexOf(t) >= 0; });
+        el.hidden = !ok;
+        if (ok) { shown += 1; }
+      });
+      if (counter) {
+        counter.textContent = shown + " of " + total + " " + unit + " shown";
+      }
+      if (empty) { empty.hidden = (shown !== 0); }
+    }
+
+    input.addEventListener("input", run);
+    input.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && input.value) {
+        input.value = "";
+        run();
+      }
+    });
+    run();
+  }
+
+  wireFilter("sap-search", "sap-table", "sap-count", "sap-empty", "tbody tr", "rows");
+  wireFilter("ext-search", "ext-list", "ext-count", "ext-empty", ".src", "sources");
+
+  /* ------------------------------------------------------ copy as TSV */
+  function cellText(el) {
+    if (!el) { return ""; }
+    var clone = el.cloneNode(true);
+    $$(".sr-only", clone).forEach(function (n) { n.parentNode.removeChild(n); });
+    return (clone.textContent || "").replace(/\s+/g, " ").trim();
+  }
+
+  function tableTSV(table) {
+    return $$("tr", table).filter(function (tr) { return !tr.hidden; }).map(function (tr) {
+      return $$("th,td", tr).map(cellText).join("\t");
+    }).join("\n");
+  }
+
+  function cardsTSV(list) {
+    var rows = [["Source", "What it gives us", "Which module", "Customers covered", "Refresh rate", "Cost or licence", "Mine or buy"].join("\t")];
+    $$(".src", list).filter(function (c) { return !c.hidden; }).forEach(function (card) {
+      var cells = [card.querySelector("h3")].concat($$("dd", card));
+      rows.push(cells.map(cellText).join("\t"));
+    });
+    return rows.join("\n");
+  }
+
+  function checklistTSV() {
+    var rows = [["Group", "Question", "Why it matters", "Answered"].join("\t")];
+    $$(".check-group").forEach(function (group) {
+      var name = cellText(group.querySelector("h3"));
+      $$(".check", group).forEach(function (row) {
+        var input = row.querySelector("input");
+        rows.push([name, cellText(row.querySelector(".q")), cellText(row.querySelector(".why")), input && input.checked ? "Yes" : "No"].join("\t"));
+      });
+    });
+    return rows.join("\n");
+  }
+
+  function legacyCopy(text) {
+    var ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed";
+    ta.style.top = "-2000px";
+    ta.style.left = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    var ok = false;
+    try { ok = document.execCommand("copy"); } catch (err) { ok = false; }
+    document.body.removeChild(ta);
+    return ok;
+  }
+
+  function flash(btn, message) {
+    var label = btn.querySelector("span") || btn;
+    if (!btn.getAttribute("data-orig")) { btn.setAttribute("data-orig", label.textContent); }
+    label.textContent = message;
+    btn.setAttribute("data-done", "1");
+    window.setTimeout(function () {
+      label.textContent = btn.getAttribute("data-orig");
+      btn.removeAttribute("data-done");
+    }, 1800);
+  }
+
+  function writeClipboard(text, btn) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(
+        function () { flash(btn, "Copied"); },
+        function () { flash(btn, legacyCopy(text) ? "Copied" : "Select and press Cmd+C"); }
+      );
+    } else {
+      flash(btn, legacyCopy(text) ? "Copied" : "Select and press Cmd+C");
+    }
+  }
+
+  $$(".copy").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var target = btn.getAttribute("data-copy");
+      var text = "";
+      if (target === "ext-list") {
+        text = cardsTSV(document.getElementById("ext-list"));
+      } else if (target === "checklist") {
+        text = checklistTSV();
+      } else {
+        var table = document.getElementById(target);
+        if (table) { text = tableTSV(table); }
+      }
+      if (text) { writeClipboard(text, btn); }
+    });
+  });
+
+  /* --------------------------------------------------------- checklist */
+  var STORE_KEY = "headroom.data-requirements.checklist.v1";
+  var boxes = $$(".check input");
+  var bar = document.getElementById("check-bar");
+  var progressText = document.getElementById("check-progress");
+  var note = document.getElementById("check-note");
+  var answers = {};
+
+  function readStore() {
+    try { return JSON.parse(window.localStorage.getItem(STORE_KEY)) || {}; }
+    catch (err) { return {}; }
+  }
+  function writeStore(value) {
+    try { window.localStorage.setItem(STORE_KEY, JSON.stringify(value)); } catch (err) { /* storage unavailable */ }
+  }
+
+  function paint() {
+    var done = 0;
+    boxes.forEach(function (input) {
+      var on = !!input.checked;
+      if (on) { done += 1; }
+      var row = input.closest(".check");
+      if (row) { row.classList.toggle("is-done", on); }
+    });
+    var pct = boxes.length ? Math.round((done / boxes.length) * 100) : 0;
+    if (bar) { bar.style.width = pct + "%"; }
+    if (progressText) { progressText.textContent = done + " of " + boxes.length + " answered"; }
+    if (note) {
+      if (done === 0) { note.textContent = "Nothing answered yet."; }
+      else if (done === boxes.length) { note.textContent = "Every question answered. Copy the answers into an email, or print the page."; }
+      else { note.textContent = done + " answered, " + (boxes.length - done) + " still open."; }
+    }
+  }
+
+  answers = readStore();
+  boxes.forEach(function (input) {
+    var key = input.getAttribute("data-key") || input.id;
+    if (answers[key]) { input.checked = true; }
+    input.addEventListener("change", function () {
+      answers[key] = input.checked;
+      writeStore(answers);
+      paint();
+    });
+  });
+  paint();
+
+  var reset = document.getElementById("check-reset");
+  if (reset) {
+    reset.addEventListener("click", function () {
+      if (!window.confirm("Clear all answers? This affects this browser only.")) { return; }
+      answers = {};
+      writeStore(answers);
+      boxes.forEach(function (input) { input.checked = false; });
+      paint();
+    });
+  }
+})();
+</script>
+</body>
+</html>

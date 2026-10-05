@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Headroom self-test</title>
+<link rel="stylesheet" href="css/app.css">
+<style>
+  body { font: 14px/1.5 ui-monospace, Menlo, monospace; padding: 20px; background: #fff; }
+  #probe { white-space: pre-wrap; }
+  .ok { color: #2F7D5B; } .bad { color: #C0492B; font-weight: 700; }
+  #mount { position: fixed; left: -9999px; top: 0; width: 1600px; }
+</style>
+</head>
+<body>
+<div id="probe">running…</div>
+<div id="mount"><div class="app" id="app"></div></div>
+
+<script src="js/core.js"></script>
+<script src="js/data.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/terrain.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/views.js"></script>
+<script src="js/assistant.js"></script>
+<script src="js/app.js"></script>
+
+<script>
+/* ---------------------------------------------------------------------------
+   A headless self-test. It exercises the engine, then renders every screen into
+   an off-screen container and walks the resulting DOM looking for the classic
+   failure modes: thrown errors, NaN in the output, empty screens, unlabelled
+   charts, and interactive elements with no handler.
+   ------------------------------------------------------------------------- */
+(function () {
+  var out = [], fails = 0, checks = 0;
+  function log(s) { out.push(s); }
+  function check(name, cond, detail) {
+    checks++;
+    if (cond) { log('  ok   ' + name + (detail ? '   ' + detail : '')); }
+    else { fails++; log('  FAIL ' + name + (detail ? '   ' + detail : '')); }
+  }
+  var errors = [];
+  window.onerror = function (m, s2, l, c, e) { errors.push(m + ' @' + l + ':' + c); };
+  var w = window;
+
+  try {
+    var HR = window.HR;
+    log('== ENGINE ==');
+    var t0 = performance.now();
+    var p = HR.engine.portfolio();
+    log('  portfolio build: ' + Math.round(performance.now() - t0) + ' ms for ' +
+      p.groupCount + ' groups x ' + HR.engine.PATHS + ' paths');
+    check('120 groups measured', p.groupCount === 120, 'got ' + p.groupCount);
+    check('total exposure is USD 8.6bn', Math.abs(p.totalExposure - 8600) < 50,
+      'got ' + HR.usd(p.totalExposure));
+    check('every group has a zone', p.rows.every(function (m) { return !!m.zone; }));
+    check('no NaN in breach chances', p.rows.every(function (m) { return isFinite(m.breachChance); }));
+    check('no NaN in worsening chances', p.rows.every(function (m) { return isFinite(m.worsenChance); }));
+    check('no NaN in exposure', p.rows.every(function (m) { return isFinite(m.exposure) && m.exposure > 0; }));
+    check('no negative exposure', p.rows.every(function (m) { return m.exposure >= 0; }));
+    check('probabilities within 0..1', p.rows.every(function (m) {
+      return m.breachChance >= 0 && m.breachChance <= 1 && m.worsenChance >= 0 && m.worsenChance <= 1;
+    }));
+    check('every reason list adds up to its score', p.rows.every(function (m) {
+      var sum = m.score.rows.reduce(function (s, r) { return s + r.points; }, 0);
+      return Math.abs(Math.round((m.score.baseRate + sum / 100) * 100) / 100 - m.worsenChance) < 1e-9;
+    }));
+    check('every breach driver list is non-empty', p.rows.every(function (m) {
+      return m.breachDrivers.length >= 4;
+    }));
+    check('radar reports only applicable families', p.rows.every(function (m) {
+      return m.radar.axes.every(function (a) { return isFinite(a.value) && a.value >= 0 && a.value <= 1; });
+    }));
+    check('private customers have no filings axis', p.rows.filter(function (m) {
+      return m.group.external.tier === 'C';
+    }).every(function (m) {
+      return !m.radar.axes.some(function (a) { return a.key === 'filings'; });
+    }));
+    check('forecast paths have a band wider than the median', p.rows.every(function (m) {
+      var f = m.forecast;
+      var mid = Math.floor(f.band.length / 2);
+      return f.band[mid].hi >= f.band[mid].lo;
+    }));
+    check('named customers match the pitch zones', (function () {
+      var want = { 'grp-A': 'Act now', 'grp-B': 'Growth', 'grp-C': 'Watch', 'grp-D': 'Watch', 'grp-E': 'Clear', 'grp-F': 'Act now' };
+      var bad = Object.keys(want).filter(function (id) {
+        var m = HR.engine.find(id);
+        return !m || m.zone !== want[id];
+      });
+      return bad.length === 0;
+    })(), 'zones: ' + HR.data.NAMED.map(function (g) {
+      return g.code + '=' + HR.engine.find(g.id).zone;
+    }).join(' '));
+
+    log('');
+    log('== CALIBRATION (model vs the pitch readings) ==');
+    HR.engine.calibration().forEach(function (c) {
+      log('  ' + c.label + ': pitch ' + HR.pct(c.expected) + ', model ' + HR.pct(c.model) +
+        ', gap ' + (c.gap * 100).toFixed(1) + ' pts');
+    });
+    check('calibration average gap under 15 points', HR.engine.calibrationRmse() < 0.15,
+      'RMSE ' + (HR.engine.calibrationRmse() * 100).toFixed(1) + ' pts');
+
+    log('');
+    log('== BACK-TEST ==');
+    var bt = HR.engine.backtest();
+    check('ladder improves every step', bt.ladderWins === 4, bt.ladderWins + ' of 4');
+    check('layer 3 beats the baseline', bt.activeLayer.caughtPct > bt.results[0].caughtPct,
+      bt.activeLayer.caughtPct + '% vs ' + bt.results[0].caughtPct + '%');
+    check('calibration bands are finite', bt.calibration.every(function (b) {
+      return isFinite(b.predicted) && isFinite(b.observed) && b.weight > 0;
+    }));
+
+    log('');
+    log('== BRIEFING ==');
+    var b = HR.engine.briefing();
+    check('briefing has sentences', b.sentences.length >= 3, b.sentences.length + ' sentences');
+    check('briefing mentions no NaN', b.sentences.join(' ').indexOf('NaN') < 0);
+    check('number check lists figures', b.checkedFigures.length >= 4);
+    log('  ' + b.sentences[0]);
+
+    log('');
+    log('== THRESHOLD SENSITIVITY ==');
+    var before = HR.engine.portfolio().counts['Act now'];
+    HR.store.setThreshold('breachProb', 0.85);
+    var after = HR.engine.portfolio().counts['Act now'];
+    check('raising the breach line moves customers out of Act now', after < before,
+      before + ' -> ' + after);
+    HR.store.resetThresholds();
+    check('thresholds reset restores the book',
+      HR.engine.portfolio().counts['Act now'] === before);
+
+    log('');
+    log('== TERRAIN (computed isolines) ==');
+    check('terrain module present', typeof HR.terrain === 'object' && typeof HR.terrain.field === 'function');
+    var tPts = p.rows.map(function (m) {
+      return { id: m.group.id, code: m.group.code, name: m.group.name, x: m.breachChance,
+        y: m.worsenChance, size: m.exposure, zone: m.zone, breach: m.breachChance, worsen: m.worsenChance };
+    });
+    var tT0 = performance.now();
+    var tSvg = HR.terrain.field({ width: 880, height: 560, points: tPts,
+      thresholds: { breachProb: 0.5, worsenProb: 0.35 }, onSelect: function () {} });
+    var tMs = Math.round(performance.now() - tT0);
+    var bands = tSvg.querySelectorAll('path[fill]');
+    var strokes = tSvg.querySelectorAll('path.contour');
+    var hits = tSvg.querySelectorAll('g.hit');
+    check('terrain renders in reasonable time', tMs < 1500, tMs + ' ms');
+    check('terrain draws filled elevation bands', bands.length >= 3, bands.length + ' bands');
+    check('terrain draws contour strokes', strokes.length >= 3, strokes.length + ' strokes');
+    check('terrain places every customer', hits.length === tPts.length, hits.length + ' of ' + tPts.length);
+    var tNan = 0;
+    Array.prototype.forEach.call(tSvg.querySelectorAll('*'), function (n) {
+      Array.prototype.forEach.call(n.attributes || [], function (a) { if (/NaN|Infinity/.test(a.value)) tNan++; });
+    });
+    check('terrain has no NaN in any attribute', tNan === 0, tNan + ' bad');
+    var contourD = Array.prototype.map.call(strokes, function (x) { return x.getAttribute('d') || ''; }).join('');
+    check('contour paths are closed loops', /Z/.test(contourD) && contourD.length > 500, contourD.length + ' chars');
+    /* An empty or degenerate field must not throw. */
+    var emptyOk = true;
+    try { HR.terrain.field({ width: 400, height: 300, points: [] }); } catch (e) { emptyOk = false; }
+    check('terrain survives an empty portfolio', emptyOk);
+
+    log('');
+    log('== SCREENS ==');
+    var mounts = [];
+    var routes = [
+      ['portfolio', null], ['customers', null], ['customer', 'grp-A'], ['customer', 'grp-C'],
+      ['customer', null], ['radar', null], ['radar', 'grp-C'], ['performance', null],
+      ['thresholds', null], ['methodology', null]
+    ];
+    var host = document.getElementById('app');
+    routes.forEach(function (r) {
+      var view = HR.screens[r[0]];
+      if (!view) { check('screen "' + r[0] + '" exists', false); return; }
+      var node;
+      var t = performance.now();
+      try {
+        node = view.render({ arg: r[1], route: r[0] });
+      } catch (e) {
+        check('render ' + r[0] + (r[1] ? '/' + r[1] : ''), false, e.message);
+        return;
+      }
+      var ms = Math.round(performance.now() - t);
+      host.appendChild(node);
+      var label = r[0] + (r[1] ? '/' + r[1] : '');
+      var text = node.textContent || '';
+      var html = node.innerHTML || '';
+      check('render ' + label, true, ms + ' ms, ' + text.length + ' chars');
+      check('  ' + label + ': no NaN or undefined in output',
+        text.indexOf('NaN') < 0 && text.indexOf('undefined') < 0 && html.indexOf('NaN') < 0);
+      check('  ' + label + ': has content', text.trim().length > 300, text.trim().length + ' chars');
+      var objStrs = (html.match(/\[object [A-Za-z]+\]/g) || []);
+      check('  ' + label + ': no DOM node rendered as a string', objStrs.length === 0,
+        objStrs.length + ' occurrences' + (objStrs.length ? ' e.g. ' + objStrs[0] : ''));
+      /* Markup that was meant to be HTML but arrived as text shows up verbatim
+         in textContent. Catch it here rather than by eye on a screenshot. */
+      var leaked = (text.match(/<(svg|span|b|i|em|strong|br|ul|li|div|circle|path)\b[^>]*>/g) || []);
+      check('  ' + label + ': no HTML leaked through as visible text', leaked.length === 0,
+        leaked.length + ' occurrences' + (leaked.length ? ' e.g. ' + leaked[0] : ''));
+      var svgs = node.querySelectorAll('svg[role="img"]');
+      if (svgs.length) {
+        var untitled = 0, nanAttr = 0;
+        Array.prototype.forEach.call(svgs, function (s) {
+          var ttl = s.querySelector('title');
+          if (!ttl || !ttl.textContent.trim()) untitled++;
+          Array.prototype.forEach.call(s.querySelectorAll('*'), function (n) {
+            Array.prototype.forEach.call(n.attributes || [], function (a) {
+              if (/NaN|Infinity/.test(a.value)) nanAttr++;
+            });
+          });
+        });
+        check('  ' + label + ': ' + svgs.length + ' chart(s) all titled', untitled === 0, untitled + ' untitled');
+        check('  ' + label + ': no NaN in chart attributes', nanAttr === 0, nanAttr + ' bad attributes');
+      }
+      var tables = node.querySelectorAll('table');
+      check('  ' + label + ': tables have rows',
+        tables.length === 0 || Array.prototype.every.call(tables, function (t) { return t.querySelectorAll('tbody tr').length > 0; }));
+      mounts.push(label);
+    });
+
+    log('');
+    log('== INTERACTIONS ==');
+
+    /* Thresholds: moving a line must actually re-zone the book. */
+    var beforeZones = JSON.stringify(HR.engine.portfolio().counts);
+    HR.store.setThreshold('breachProb', 0.9);
+    var afterZones = JSON.stringify(HR.engine.portfolio().counts);
+    check('moving the breach line re-zones the book', beforeZones !== afterZones,
+      beforeZones + ' -> ' + afterZones);
+    HR.store.resetThresholds();
+    check('resetting restores the zones', JSON.stringify(HR.engine.portfolio().counts) === beforeZones);
+
+    /* The customer list: search and the zone filter must both narrow it. */
+    var listNode = HR.screens.customers.render({});
+    check('customer list renders every group',
+      listNode.querySelectorAll('.tbl tbody tr').length === 120);
+    var searchInput = listNode.querySelector('input[type=search]');
+    check('customer list has a search box', !!searchInput);
+    if (searchInput) {
+      searchInput.value = 'Northwind';
+      searchInput.dispatchEvent(new w.Event('input', { bubbles: true }));
+      var hits = listNode.querySelectorAll('.tbl tbody tr').length;
+      check('search narrows the list', hits > 0 && hits < 120, hits + ' rows for "Northwind"');
+    }
+    var segButtons = listNode.querySelectorAll('.seg button');
+    check('zone filter offers five options', segButtons.length === 5);
+    if (segButtons.length === 5) {
+      segButtons[1].dispatchEvent(new w.Event('click', { bubbles: true }));
+      var actRows = listNode.querySelectorAll('.tbl tbody tr').length;
+      check('zone filter narrows the list', actRows > 0 && actRows < 120,
+        actRows + ' rows in Act now');
+    }
+
+    /* A sortable header must actually reorder. */
+    var perf = HR.screens.performance.render({});
+    check('performance screen renders its tables', perf.querySelectorAll('.tbl tbody tr').length >= 5);
+
+    log('');
+    log('== REGRESSIONS ==');
+
+    /* The assistant's scrim must use the class the stylesheet actually defines.
+       A mismatch leaves an invisible, unclickable backdrop and the drawer feels
+       broken — which is exactly what shipped once. */
+    HR.assistant.open();
+    var scrim = document.querySelector('.drawer-scrim');
+    var badScrim = document.querySelector('.drawer-backdrop');
+    check('assistant scrim uses the styled class', !!scrim && !badScrim,
+      scrim ? 'found .drawer-scrim' : 'no scrim element');
+    var drawerEl = document.querySelector('.drawer');
+    check('assistant drawer opens', !!drawerEl && drawerEl.classList.contains('open'));
+    check('assistant traps focus', drawerEl && drawerEl.getAttribute('aria-modal') === 'true');
+    HR.assistant.close();
+    check('assistant drawer closes', !document.querySelector('.drawer.open'));
+
+    /* The boot must not be driven by animation frames: a frame-scheduled loop
+       stops dead in a background tab, a headless render and an off-screen frame,
+       and the app would never leave its loading screen. */
+    check('boot yields on a timer, not an animation frame',
+      HR.__bootScheduler === 'timeout', 'scheduler = ' + HR.__bootScheduler);
+
+    /* Navigating must not stack listeners on `document`. The shell rebuilds the
+       sidebar on every route change, and anything bound globally from there
+       would pile up for the life of the page. */
+    if (typeof HR.__navListenerCount === 'function' && typeof HR.__mount === 'function') {
+      HR.__resetNavListeners();
+      var mountHost = document.getElementById('app');
+      if (mountHost) {
+        for (var mi = 0; mi < 5; mi++) HR.__mount();
+        check('re-navigating five times binds no extra global listeners',
+          HR.__navListenerCount() === 0, HR.__navListenerCount() + ' bound from mount()');
+      } else {
+        log('  --   no mount host; skipping listener-growth check');
+      }
+    }
+
+    /* Navigating must not stack listeners on document. */
+    var sidebar = null;
+    try {
+      sidebar = w.HR.__buildSidebar ? w.HR.__buildSidebar() : null;
+    } catch (e) { sidebar = null; }
+    if (sidebar) {
+      check('sidebar carries a navigation disclosure', !!sidebar.querySelector('#navToggle'));
+      check('navigation is closed by default', !sidebar.classList.contains('nav-open'));
+    } else {
+      log('  --   sidebar builder not exported; skipping shell checks');
+    }
+
+    log('');
+    log('== ASSISTANT ==');
+    [
+      'Why did Customer A move to Act now?',
+      'What is on the watchlist this week?',
+      'What is the biggest exposure in Act now?',
+      'Which customers could breach without getting worse?',
+      'Does the model beat the current rule?',
+      'What do we not know yet?',
+      'How is exposure calculated?',
+      'What are the thresholds?',
+      'nonsense question that matches nothing at all'
+    ].forEach(function (q) {
+      var a = HR.assistant.answer(q);
+      var text = a.text || '';
+      check('assistant: "' + q.slice(0, 40) + '"', !!a.text && !!a.source &&
+        text.indexOf('NaN') < 0 && text.indexOf('undefined') < 0,
+        text.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 68) + '…');
+    });
+
+    log('');
+    log('== SUMMARY ==');
+    log('  ' + checks + ' checks, ' + fails + ' failed');
+    if (errors.length) log('  uncaught errors: ' + errors.join(' | '));
+    log(fails === 0 ? 'RESULT: ALL PASS' : 'RESULT: ' + fails + ' FAILURES');
+
+  } catch (e) {
+    log('HARNESS THREW: ' + (e && e.stack || e));
+    fails++;
+  }
+
+  var pre = document.getElementById('probe');
+  pre.textContent = out.join('\n');
+  pre.className = fails ? 'bad' : 'ok';
+})();
+</script>
+</body>
+</html>

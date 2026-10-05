@@ -1,6 +1,7 @@
 # Claude Design — web app
 
-A design skill for Claude, plus three worked samples that show what it produces.
+A design skill for Claude, three worked samples that show what it produces, and a
+full application built with it.
 
 The skill is called **`design-app`**. It is a portable directive: paste it into a
 project, or install it as a skill, and it changes how an interface gets designed —
@@ -56,6 +57,7 @@ design-app/
     └── audit.js          A measured craft report for a live page.
 
 design-app-samples/       Three worlds, three surfaces, three palettes.
+headroom-app/             A full application built with the skill.
 DESIGN-PROMPT.md          The same directive as a single copy-paste block.
 ```
 
@@ -92,6 +94,33 @@ skill is a method, not a house style.
 
 Each sample carries its own **direction contract** in an HTML comment at the top —
 its thesis, its world, and where the world came from. Read that first.
+
+---
+
+## The application
+
+`headroom-app/` is a working prototype built to the same directive: an advanced
+credit-management dashboard for **Jabil** (project IND2620-0011), a real brief
+from a real company. It is included because a skill is only credible if it
+survives contact with a constrained, unglamorous, data-dense problem.
+
+Open `headroom-app/index.html`. No build step, no dependencies, no network — the
+fonts ship inside the folder.
+
+| File | What it is |
+|---|---|
+| `index.html` | The landing page: a cinematic dark opening, three proof figures, and a scroll-linked demonstration of the mechanism on one customer |
+| `app.html` | The dashboard. Seven screens: portfolio, customers, customer detail, external radar, model performance, thresholds, methodology |
+| `data-requirements.html` | The data request to Jabil — every SAP field, every external source, and a readiness checklist |
+| `selftest.html` | 128 checks. Run it and read the result at the top. |
+
+Every customer and every figure in the prototype is invented. Nothing is fetched
+at runtime, and no data leaves the browser.
+
+**Note on fonts.** Instrument Serif and Hanken Grotesk are bundled under the SIL
+Open Font License. Proxima Nova is *not* bundled — it is commercial — and is
+referenced only as the first entry in a font stack, so it renders on a Mac where
+it is already installed and falls back cleanly everywhere else.
 
 ---
 
@@ -146,4 +175,7 @@ Both are in `reference/motion.md` and `reference/quality.md`.
 
 ## Licence
 
-Not yet chosen. Until one is added, the default is all rights reserved.
+MIT — see [`LICENSE`](LICENSE). Use it, change it, ship it.
+
+The bundled typefaces are separately licensed under the SIL Open Font License and
+keep their own terms.
