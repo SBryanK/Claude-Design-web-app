@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bus 8 — Session 47, tracking day 2</title>
+
+<!-- ==========================================================================
+     DIRECTION CONTRACT
+
+     THESIS     Let a tracking engineer see, at a glance and from across the
+                room, which of sixteen inputs is armed, which is clipping, and
+                how much of the day is banked. Refuses the category default: a
+                row of KPI tiles above a line chart of "session progress".
+
+     WORLD      The console itself — the one surface this person stares at for
+                twelve hours. Vertical channel strips, meters that read bottom-up,
+                a peak-hold that decays, a take log ruled like a tape box. Dark,
+                because a control room is dark and a bright screen at 1am is
+                unusable. Amber is the meter, red is clipping, green is armed:
+                all three earned, none decorative.
+
+     FIRST      The session header as a tape box spine — room, date, timecode,
+     VIEWPORT   engineer — then sixteen channel strips with live meters. The
+                thing the engineer reads is the tallest thing on screen, and the
+                take log is deliberately below the fold.
+
+     FORM       Console surface. Dark chosen from the use scene: night session,
+                dim room, eyes adapted, screen is the brightest object present.
+     ========================================================================== -->
+
+<style>
+:root {
+  /* Dark ground, tuned warm-neutral so amber meters read as light rather than
+     as an alarm. Pure black would crush the shadows of the strips. */
+  --room:      #0C0E10;
+  --strip:     #14181C;
+  --strip-2:   #1A2026;
+  --strip-3:   #232B32;
+  --edge:      #2C353D;
+  --edge-2:    #3B4650;
+
+  --ink:       #E9EEF2;
+  --ink-2:     #A8B4BD;
+  --ink-3:     #939FA9;   /* verified >=4.5:1 on strip and strip-3 */
+
+  /* Earned colours. Each has an ink variant for text and a fill variant for
+     marks, because the two jobs need different weights against this ground. */
+  --meter:     #E8A33D;   /* amber — signal present, the level scale */
+  --meter-ink: #F0B65E;   /* amber as text: 9.4:1 on the strip */
+  --clip:      #E5544A;   /* red — clipping, and only clipping */
+  --clip-ink:  #FF8A80;   /* red as text: 6.9:1 on the strip */
+  --arm:       #4FBF7A;   /* green — armed and ready */
+  --arm-ink:   #6FD699;   /* green as text: 8.4:1 on the strip */
+
+  --font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+
+  --fs-2xs: 0.6875rem; --fs-xs: 0.75rem; --fs-sm: 0.8125rem;
+  --fs-base: 0.875rem; --fs-md: 1rem; --fs-lg: 1.125rem;
+  --fs-xl: 1.375rem; --fs-2xl: 1.75rem;
+
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 20px; --s6: 24px; --s7: 32px;
+
+  --r-sm: 4px; --r: 6px; --r-lg: 10px;
+
+  --e1: 0 1px 0 rgba(255,255,255,.03), 0 0 0 1px rgba(0,0,0,.4);
+  --e2: 0 18px 40px -20px rgba(0,0,0,.8), 0 0 0 1px rgba(0,0,0,.5);
+
+  --ease: cubic-bezier(.22,.68,.35,1);
+  --dur-2: 220ms; --dur-3: 360ms; --dur-4: 600ms;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; color-scheme: dark; }
+body {
+  margin: 0; background: var(--room); color: var(--ink);
+  font-family: var(--font); font-size: var(--fs-base); line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3 { margin: 0; font-weight: 500; letter-spacing: -.014em; }
+p { margin: 0; }
+button { font: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+:focus-visible { outline: 3px solid var(--meter-ink); outline-offset: 2px; border-radius: 3px; }
+::selection { background: var(--meter); color: #14181C; }
+.num, .mono { font-variant-numeric: tabular-nums; }
+.mono { font-family: var(--font-mono); }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); }
+
+.shell { width: min(1560px, 100% - 40px); margin-inline: auto; }
+
+/* ------------------------------------------------------------ tape spine -- */
+.spine {
+  border-bottom: 1px solid var(--edge);
+  background: var(--strip); position: sticky; top: 0; z-index: 40;
+}
+.spine-in {
+  display: flex; align-items: center; gap: var(--s6);
+  padding: var(--s4) 0; flex-wrap: wrap;
+}
+.room { display: flex; align-items: baseline; gap: var(--s3); }
+h1 { font-size: var(--fs-xl); letter-spacing: -.016em; }
+.room-no {
+  font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--ink-3);
+  border: 1px solid var(--edge-2); border-radius: var(--r-sm); padding: 2px 7px;
+}
+
+/* The clock is the loudest figure in the header, because it is the one thing
+   read from the live room through a glass door. */
+.clock { margin-left: auto; display: flex; align-items: baseline; gap: var(--s4); }
+.tc {
+  font-family: var(--font-mono); font-size: var(--fs-2xl); font-weight: 500;
+  letter-spacing: -.01em; color: var(--ink);
+}
+.tc-label { font-size: var(--fs-2xs); text-transform: uppercase; letter-spacing: .12em; color: var(--ink-3); font-weight: 700; }
+.spine-meta { display: flex; gap: var(--s5); font-size: var(--fs-xs); color: var(--ink-3); flex-wrap: wrap; }
+.spine-meta b { color: var(--ink-2); font-weight: 500; }
+
+.rec {
+  display: inline-flex; align-items: center; gap: 7px;
+  background: rgba(229,84,74,.13); border: 1px solid rgba(229,84,74,.42);
+  border-radius: 999px; padding: 4px 11px 4px 9px;
+  font-size: var(--fs-2xs); font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--clip-ink);
+}
+.rec i {
+  width: 7px; height: 7px; border-radius: 50%; background: var(--clip);
+  animation: pulse 2s var(--ease) infinite;
+}
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+@media (prefers-reduced-motion: reduce) { .rec i { animation: none; } }
+
+/* ---------------------------------------------------------- channel bank -- */
+.bank-head {
+  display: flex; align-items: baseline; gap: var(--s4); margin: var(--s6) 0 var(--s3);
+}
+h2 { font-size: var(--fs-lg); }
+.bank-note { font-size: var(--fs-sm); color: var(--ink-3); }
+
+.bank {
+  display: grid; grid-template-columns: repeat(16, minmax(0, 1fr));
+  gap: 1px; background: var(--edge);
+  border: 1px solid var(--edge); border-radius: var(--r-lg); overflow: hidden;
+}
+
+.strip {
+  background: var(--strip); padding: var(--s3) 9px var(--s2);
+  display: flex; flex-direction: column; align-items: center; gap: var(--s2);
+  min-width: 0; position: relative;
+  transition: background var(--dur-2) var(--ease);
+}
+.strip:hover { background: var(--strip-2); }
+.strip.is-clip { background: rgba(229,84,74,.09); }
+
+.ch {
+  font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--ink-2);
+  letter-spacing: .04em;
+}
+.src {
+  font-size: var(--fs-xs); font-weight: 600; color: var(--ink-2);
+  text-align: center; line-height: 1.25;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
+}
+
+/* The meter. It reads bottom-up, which is the only orientation a console has. */
+.meter {
+  width: 22px; height: 168px; border-radius: 2px; position: relative;
+  background: linear-gradient(180deg, #0A0C0E 0%, #101418 100%);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.6);
+  overflow: hidden; margin: var(--s1) 0;
+}
+.meter .fill {
+  position: absolute; left: 0; right: 0; top: 0; bottom: 0;
+  background: linear-gradient(180deg, var(--clip) 0%, var(--meter) 34%, #8A6A24 100%);
+  transform-origin: bottom center;
+  transition: transform var(--dur-3) var(--ease);
+}
+/* Peak hold: a hairline that decays. It is the reason an engineer can look away
+   and still know what happened. */
+.meter .peak {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 2px;
+  background: var(--ink);
+  transition: transform var(--dur-4) var(--ease);
+  opacity: .9;
+}
+/* The -6 dB reference line: where the engineer aims for. */
+.meter .ref {
+  position: absolute; left: 0; right: 0; height: 1px; z-index: 2;
+  background: rgba(233,238,242,.42);
+}
+
+.db {
+  font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--ink-3);
+  letter-spacing: -.01em;
+}
+.db.hot { color: var(--clip-ink); font-weight: 600; }
+
+.arm {
+  width: 100%; min-height: 30px; border-radius: var(--r-sm);
+  display: grid; place-items: center;
+  font-size: var(--fs-2xs); font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
+  background: var(--strip-3); color: var(--ink-3);
+  transition: background var(--dur-2) var(--ease), color var(--dur-2) var(--ease);
+}
+.arm:hover { background: var(--edge-2); color: var(--ink-2); }
+.arm[aria-pressed="true"] { background: rgba(79,191,122,.16); color: var(--arm-ink); box-shadow: inset 0 0 0 1px rgba(79,191,122,.4); }
+
+/* ------------------------------------------------------------------ log --- */
+.lower {
+  display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  gap: var(--s6); margin: var(--s7) 0 var(--s7); align-items: start;
+}
+.panel { background: var(--strip); border: 1px solid var(--edge); border-radius: var(--r-lg); overflow: hidden; }
+.panel-head {
+  padding: var(--s3) var(--s4); border-bottom: 1px solid var(--edge);
+  display: flex; align-items: baseline; gap: var(--s3);
+}
+.panel-head h3 { font-size: var(--fs-base); }
+.panel-head .count { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--ink-3); margin-left: auto; }
+
+.log { width: 100%; border-collapse: collapse; }
+.log th, .log td { text-align: left; padding: 9px var(--s4); font-size: var(--fs-sm); }
+.log th {
+  font-size: var(--fs-2xs); text-transform: uppercase; letter-spacing: .1em;
+  font-weight: 700; color: var(--ink-3); border-bottom: 1px solid var(--edge);
+}
+.log td { border-bottom: 1px solid rgba(44,53,61,.5); color: var(--ink-2); }
+.log tr:last-child td { border-bottom: none; }
+.log tbody tr { transition: background var(--dur-2) var(--ease); }
+.log tbody tr:hover { background: var(--strip-2); }
+.log .n { font-family: var(--font-mono); color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.log .take { font-family: var(--font-mono); color: var(--ink); font-variant-numeric: tabular-nums; }
+.log .song { color: var(--ink); font-weight: 500; }
+.log td.r { text-align: right; font-variant-numeric: tabular-nums; }
+
+.verdict {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: var(--fs-2xs); font-weight: 700; text-transform: uppercase; letter-spacing: .07em;
+}
+.verdict.keep { color: var(--arm-ink); }
+.verdict.hold { color: var(--meter-ink); }
+.verdict.bad  { color: var(--clip-ink); }
+
+/* ----------------------------------------------------------------- day ---- */
+.banked { padding: var(--s4); }
+.big {
+  font-family: var(--font-mono); font-size: var(--fs-2xl); font-weight: 500;
+  color: var(--ink); line-height: 1.1; letter-spacing: -.01em;
+}
+.big-label { font-size: var(--fs-2xs); text-transform: uppercase; letter-spacing: .12em; color: var(--ink-3); font-weight: 700; }
+.big-note { font-size: var(--fs-sm); color: var(--ink-3); margin-top: var(--s1); }
+
+.hours { margin-top: var(--s5); display: flex; flex-direction: column; gap: 7px; }
+.hour { display: grid; grid-template-columns: 46px 1fr 40px; align-items: center; gap: var(--s3); }
+.hour-k { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--ink-3); }
+.hour-track { height: 6px; background: var(--strip-3); border-radius: 3px; overflow: hidden; }
+.hour-track i { display: block; height: 100%; transform-origin: left center; border-radius: 3px; }
+.hour-v { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--ink-3); text-align: right; }
+
+.foot {
+  border-top: 1px solid var(--edge); padding: var(--s4) 0 var(--s7);
+  display: flex; justify-content: space-between; gap: var(--s4); flex-wrap: wrap;
+  font-size: var(--fs-xs); color: var(--ink-3);
+}
+
+@media (max-width: 1200px) {
+  .bank { grid-template-columns: repeat(8, minmax(0, 1fr)); }
+  .lower { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 720px) {
+  .bank { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .clock { margin-left: 0; width: 100%; order: 3; }
+  .tc { font-size: var(--fs-xl); }
+}
+
+@media print {
+  html { color-scheme: light; }
+  body { background: #fff; color: #000; }
+  .spine { position: static; }
+  .rec i { animation: none; }
+}
+</style>
+</head>
+<body>
+
+<header class="spine">
+  <div class="shell spine-in">
+    <div class="room">
+      <h1>Session 47</h1>
+      <span class="room-no">STUDIO B</span>
+    </div>
+    <div class="spine-meta">
+      <span><b>Day</b> 2 of 4</span>
+      <span><b>Engineer</b> M. Ferreira</span>
+      <span><b>Assistant</b> J. Lindqvist</span>
+      <span><b>Client</b> Halden</span>
+    </div>
+    <span class="rec"><i></i> Rolling</span>
+    <div class="clock">
+      <div>
+        <div class="tc-label">Timecode</div>
+        <div class="tc num">01:47:22:14</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="shell">
+  <div class="bank-head">
+    <h2>Input bank</h2>
+    <span class="bank-note">Sixteen channels · 48 kHz / 24-bit · meters show 300 ms peak</span>
+  </div>
+
+  <div class="bank" id="bank" role="group" aria-label="Channel strips"></div>
+
+  <div class="lower">
+    <section class="panel">
+      <div class="panel-head">
+        <h3>Take log</h3>
+        <span class="count num" id="take-count">9 takes</span>
+      </div>
+      <table class="log">
+        <thead>
+          <tr>
+            <th scope="col">#</th>
+            <th scope="col">Song</th>
+            <th scope="col">In</th>
+            <th scope="col" style="text-align:right">Length</th>
+            <th scope="col">Verdict</th>
+          </tr>
+        </thead>
+        <tbody id="takes"></tbody>
+      </table>
+    </section>
+
+    <section class="panel banked">
+      <div class="big-label">Banked today</div>
+      <div class="big num" id="banked">4:12:06</div>
+      <div class="big-note">of 6:00:00 booked — 70%, on a two-day average of 63%</div>
+
+      <div class="hours" id="hours"></div>
+    </section>
+  </div>
+</main>
+
+<footer class="shell foot">
+  <span>Bus 8 · Studio B · session 47</span>
+  <span class="mono">Peak −3.1 dBFS · no clipping in the last hour</span>
+</footer>
+
+<script>
+/* The meters are computed from a fixed-seed level log, so the picture is stable
+   between reloads and the numbers always agree with the bars. */
+(function () {
+  var NS = 'http://www.w3.org/2000/svg';
+
+  function mulberry32(a) {
+    return function () {
+      a |= 0; a = a + 0x6D2B79F5 | 0;
+      var t = Math.imul(a ^ a >>> 15, 1 | a);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  var rnd = mulberry32(4711);
+
+  /* Sixteen inputs, in the order they sit on the desk. */
+  var CHANNELS = [
+    { ch: 1,  src: 'Kick',      in: true,  level: -4.2 },
+    { ch: 2,  src: 'Snare top', in: true,  level: -6.8 },
+    { ch: 3,  src: 'Snare bot', in: true,  level: -11.4 },
+    { ch: 4,  src: 'Hi-hat',    in: false, level: -18.9 },
+    { ch: 5,  src: 'Rack tom',  in: true,  level: -9.1 },
+    { ch: 6,  src: 'Floor tom', in: true,  level: -8.4 },
+    { ch: 7,  src: 'OH L',      in: true,  level: -12.2 },
+    { ch: 8,  src: 'OH R',      in: true,  level: -12.0 },
+    { ch: 9,  src: 'Room L',    in: false, level: -21.5 },
+    { ch: 10, src: 'Room R',    in: false, level: -22.1 },
+    { ch: 11, src: 'Bass DI',   in: true,  level: -7.6 },
+    { ch: 12, src: 'Bass amp',  in: true,  level: -10.3 },
+    { ch: 13, src: 'Gtr L',     in: true,  level: -9.8 },
+    { ch: 14, src: 'Gtr R',     in: true,  level: -10.1 },
+    { ch: 15, src: 'Keys',      in: true,  level: -13.7 },
+    { ch: 16, src: 'Guide vox', in: false, level: -16.2 }
+  ];
+
+  /* dBFS to a 0..1 bar height, over a -48..0 range. */
+  function norm(db) { return Math.max(0, Math.min(1, (db + 48) / 48)); }
+  function fmt(db) { return (db <= -40 ? '−∞' : (db > 0 ? '+' : '−') + Math.abs(db).toFixed(1)); }
+
+  var bank = document.getElementById('bank');
+  CHANNELS.forEach(function (c, i) {
+    var hot = c.level > -6;
+    var strip = document.createElement('div');
+    strip.className = 'strip' + (hot ? ' is-clip' : '');
+    strip.setAttribute('role', 'group');
+    strip.setAttribute('aria-label', 'Channel ' + c.ch + ', ' + c.src + ', ' +
+      (c.in ? 'armed' : 'not armed') + ', peak ' + Math.abs(c.level).toFixed(1) + ' dB below full scale');
+
+    var h = norm(c.level);
+    /* A peaking signal jitters; a steady one does not. Seeded, so it is stable. */
+    var jitter = (rnd() - 0.5) * 0.05;
+    var peakH = Math.min(1, h + Math.abs(jitter) + 0.02);
+
+    strip.innerHTML =
+      '<span class="ch num">' + String(c.ch).padStart(2, '0') + '</span>' +
+      '<span class="src">' + c.src + '</span>' +
+      '<div class="meter" aria-hidden="true">' +
+        '<div class="ref" style="bottom:' + (norm(-6) * 100).toFixed(1) + '%"></div>' +
+        '<div class="fill" style="transform:scaleY(' + h.toFixed(3) + ')"></div>' +
+        '<div class="peak" style="transform:translateY(-' + (peakH * 168).toFixed(1) + 'px)"></div>' +
+      '</div>' +
+      '<span class="db num' + (hot ? ' hot' : '') + '">' + fmt(c.level) + '</span>' +
+      '<button class="arm" type="button" aria-pressed="' + c.in + '">' + (c.in ? 'Armed' : 'Off') + '</button>';
+
+    bank.appendChild(strip);
+  });
+
+  /* Arming is the one control on this screen, so it is real. */
+  bank.addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('.arm') : null;
+    if (!b) return;
+    var on = b.getAttribute('aria-pressed') !== 'true';
+    b.setAttribute('aria-pressed', String(on));
+    b.textContent = on ? 'Armed' : 'Off';
+  });
+
+  /* Take log — the day's actual record. */
+  var TAKES = [
+    ['01', 'Northline',   '00:12:04', '4:38', 'keep'],
+    ['02', 'Northline',   '00:19:41', '4:41', 'keep'],
+    ['03', 'Northline',   '00:28:55', '2:07', 'bad'],
+    ['04', 'Northline',   '00:36:10', '4:44', 'keep'],
+    ['05', 'Harbour Light','00:52:33', '5:12', 'keep'],
+    ['06', 'Harbour Light','01:04:18', '5:09', 'hold'],
+    ['07', 'Harbour Light','01:16:02', '1:38', 'bad'],
+    ['08', 'Harbour Light','01:24:47', '5:14', 'keep'],
+    ['09', 'Undertow',    '01:38:20', '3:02', 'hold']
+  ];
+  var VERDICT = { keep: 'Keep', hold: 'Hold', bad: 'False start' };
+  var tbody = document.getElementById('takes');
+  TAKES.forEach(function (t) {
+    var tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td class="n">' + t[0] + '</td>' +
+      '<td class="song">' + t[1] + '</td>' +
+      '<td class="take">' + t[2] + '</td>' +
+      '<td class="r">' + t[3] + '</td>' +
+      '<td><span class="verdict ' + t[4] + '">' + VERDICT[t[4]] + '</span></td>';
+    tbody.appendChild(tr);
+  });
+  document.getElementById('take-count').textContent = TAKES.length + ' takes';
+
+  /* Hours banked, one bar per booked hour. */
+  var HOURS = [
+    { h: '10:00', pct: 1.00 }, { h: '11:00', pct: 0.92 }, { h: '12:00', pct: 0.58 },
+    { h: '13:00', pct: 0.12 }, { h: '14:00', pct: 0.96 }, { h: '15:00', pct: 0.54 }
+  ];
+  var hours = document.getElementById('hours');
+  HOURS.forEach(function (x) {
+    var row = document.createElement('div');
+    row.className = 'hour';
+    var colour = x.pct > 0.85 ? 'var(--arm)' : x.pct < 0.3 ? 'var(--edge-2)' : 'var(--meter)';
+    row.innerHTML =
+      '<span class="hour-k">' + x.h + '</span>' +
+      '<span class="hour-track"><i style="transform:scaleX(' + x.pct + ');background:' + colour + '"></i></span>' +
+      '<span class="hour-v">' + Math.round(x.pct * 100) + '%</span>';
+    hours.appendChild(row);
+  });
+
+  /* No entrance animation on the bank. The strips are hidden first and revealed
+     from here, which means a slow script, a blocked timer or a background tab
+     leaves an engineer staring at an empty console. The meters already settle
+     through their own transition, and that is enough motion for this surface. */
+})();
+</script>
+</body>
+</html>

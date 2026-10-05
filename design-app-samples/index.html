@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>design-app — samples</title>
+<style>
+:root {
+  --ground: #FBFAF7; --ink: #14171A; --ink-2: #4E565E; --ink-3: #7A838B;
+  --line: #E3E1DA; --accent: #2F5D8C;
+  --font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-display: "Instrument Serif", "Iowan Old Style", Palatino, Georgia, serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--ground); color: var(--ink);
+  font-family: var(--font); font-size: 15px; line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+.wrap { width: min(1080px, 100% - 48px); margin-inline: auto; padding: 72px 0 96px; }
+h1 {
+  font-family: var(--font-display); font-weight: 400;
+  font-size: clamp(2.5rem, 1.6rem + 3.6vw, 4rem); line-height: 1.02;
+  letter-spacing: -.022em; margin: 0 0 20px;
+}
+.lede { font-size: clamp(1.0625rem, .98rem + .35vw, 1.25rem); color: var(--ink-2); max-width: 62ch; margin: 0 0 8px; }
+.note { font-size: .875rem; color: var(--ink-3); max-width: 68ch; margin: 0; }
+.samples { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; margin-top: 56px; }
+@media (max-width: 900px) { .samples { grid-template-columns: minmax(0, 1fr); } }
+
+.card {
+  display: flex; flex-direction: column;
+  border: 1px solid var(--line); border-radius: 14px; overflow: hidden;
+  background: #fff; text-decoration: none; color: inherit;
+  transition: box-shadow 220ms cubic-bezier(.22,.68,.35,1), transform 220ms cubic-bezier(.22,.68,.35,1);
+}
+.card:hover { box-shadow: 0 18px 40px -20px rgba(20,23,26,.28), 0 2px 6px rgba(20,23,26,.05); transform: translateY(-2px); }
+.thumb { aspect-ratio: 4 / 3; display: block; overflow: hidden; background: #EEE; }
+.thumb img { width: 100%; height: 100%; object-fit: cover; object-position: top center; display: block; }
+.body { padding: 18px 20px 20px; }
+.kicker { font-size: .6875rem; text-transform: uppercase; letter-spacing: .1em; font-weight: 700; color: var(--ink-3); }
+.card h2 { font-family: var(--font-display); font-weight: 400; font-size: 1.5rem; letter-spacing: -.014em; margin: 6px 0 8px; }
+.card p { margin: 0; font-size: .875rem; color: var(--ink-2); line-height: 1.5; }
+.world { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); font-size: .8125rem; color: var(--ink-3); }
+.world b { color: var(--ink-2); font-weight: 500; }
+
+.method { margin-top: 64px; padding-top: 32px; border-top: 1px solid var(--line); }
+.method h2 { font-family: var(--font-display); font-weight: 400; font-size: 1.75rem; letter-spacing: -.014em; margin: 0 0 12px; }
+.method table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+.method th, .method td { text-align: left; padding: 10px 12px 10px 0; border-bottom: 1px solid var(--line); font-size: .875rem; vertical-align: top; }
+.method th { font-size: .6875rem; text-transform: uppercase; letter-spacing: .1em; font-weight: 700; color: var(--ink-3); }
+.method td { color: var(--ink-2); }
+.method td:first-child { color: var(--ink); font-weight: 500; white-space: nowrap; }
+code { font-family: var(--font-mono); font-size: .8125rem; background: #F1EFE9; padding: 1px 5px; border-radius: 4px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Three worlds, three surfaces.</h1>
+  <p class="lede">
+    Each sample was built from one direction contract: a thesis, a world derived from
+    the subject's own material culture, and a first viewport that answers the question
+    rather than describing the product. The worlds share no palette, no type pairing,
+    and no structure — that is the point.
+  </p>
+  <p class="note">
+    No build step, no dependencies, no network. Open any file directly.
+  </p>
+
+  <div class="samples">
+    <a class="card" href="01-meridian-coffee/index.html">
+      <span class="thumb"><img src="_shots/01.png" alt="Meridian Coffee lot page"></span>
+      <span class="body">
+        <span class="kicker">Marketing site · light</span>
+        <h2>Meridian Coffee</h2>
+        <p>A single-origin lot page that argues with a computed roast curve instead of a farm photograph.</p>
+        <span class="world"><b>World:</b> the cupping sheet and the roast log</span>
+      </span>
+    </a>
+
+    <a class="card" href="02-tally-field-survey/index.html">
+      <span class="thumb"><img src="_shots/02.png" alt="Tally field survey screen"></span>
+      <span class="body">
+        <span class="kicker">Mobile app · light</span>
+        <h2>Tally</h2>
+        <p>One-handed transect counting in daylight, with the running total pinned where the thumb rests.</p>
+        <span class="world"><b>World:</b> the naturalist's ruled field sheet</span>
+      </span>
+    </a>
+
+    <a class="card" href="03-bus8-session/index.html">
+      <span class="thumb"><img src="_shots/03.png" alt="Bus 8 session console"></span>
+      <span class="body">
+        <span class="kicker">Dashboard · dark</span>
+        <h2>Bus 8</h2>
+        <p>Sixteen channel strips an engineer can read from across a dark control room.</p>
+        <span class="world"><b>World:</b> the console surface itself</span>
+      </span>
+    </a>
+  </div>
+
+  <div class="method">
+    <h2>What the contract decided, and what followed from it</h2>
+    <table>
+      <thead>
+        <tr><th>Decision</th><th>Meridian</th><th>Tally</th><th>Bus 8</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Surface</td><td>Persuade, read once</td><td>Do one task, one hand</td><td>Scan sixteen values fast</td></tr>
+        <tr><td>Ground</td><td>Warm paper</td><td>Cool field paper</td><td>Near-black room</td></tr>
+        <tr><td>Ground chosen by</td><td>Print heritage</td><td>Daylight glare outdoors</td><td>Night session, dim room</td></tr>
+        <tr><td>Display face</td><td>Instrument Serif</td><td>None — task UI</td><td>None — a mono for measurement</td></tr>
+        <tr><td>Density</td><td>Generous</td><td>Measured, 44px targets</td><td>Dense</td></tr>
+        <tr><td>The one authored moment</td><td>The roast curve</td><td>The running total</td><td>The meters settling</td></tr>
+        <tr><td>Earned accent</td><td>First crack, once</td><td>New-to-transect, once</td><td>Amber meter, red clip, green arm</td></tr>
+      </tbody>
+    </table>
+    <p class="note" style="margin-top:24px">
+      Every sample was run through <code>scripts/audit.js</code> before shipping,
+      and each one failed on the first pass. What it caught:
+    </p>
+    <table style="margin-top:16px">
+      <thead><tr><th>Sample</th><th>Finding</th><th>Fix</th></tr></thead>
+      <tbody>
+        <tr><td>Tally</td><td>13 text nodes under AA — the muted ink measured 3.93:1 on the group-header ground and 4.17:1 on field paper</td><td>Ink darkened to <code>#556049</code>, verified ≥4.5:1 on all three grounds</td></tr>
+        <tr><td>Tally</td><td>11 running labels at 11px, below the declared 12px floor</td><td>Condition chips, species names and the progress readout raised to 12px</td></tr>
+        <tr><td>Bus 8</td><td>The arm button's own ground pulled its label to 3.84:1</td><td>Ink raised to <code>#939FA9</code>, verified against the darkest strip</td></tr>
+        <tr><td>Bus 8</td><td><strong>16 channel strips started at <code>opacity: 0</code></strong> and were revealed from JavaScript</td><td>Entrance animation removed entirely — a blocked timer would have left an empty console</td></tr>
+      </tbody>
+    </table>
+    <p class="note" style="margin-top:20px">
+    </p>
+  </div>
+</div>
+</body>
+</html>

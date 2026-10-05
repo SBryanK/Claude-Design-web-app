@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Meridian Coffee — Lot 0417, Finca La Esperanza</title>
+
+<!-- ==========================================================================
+     DIRECTION CONTRACT
+
+     THESIS     Convince a wholesale buyer that this lot earns its premium, and
+                hand them the two facts they will repeat to their own customers.
+                Refuses the category default: a full-bleed farm photograph, three
+                origin pictograms, and a "Shop now".
+
+     WORLD      The cupping sheet and the roast log — the two documents a roaster
+                actually works from. Ruled score tables, a computed rate-of-rise
+                curve, pencil annotations in the margins, a specimen label at the
+                head of the page. Warm paper, deep coffee ink, and one earned
+                accent: first crack.
+
+     FIRST      The lot's identity set as a specimen label — producer, altitude,
+     VIEWPORT   process, lot number — beside the roast curve that is the actual
+                argument. No photograph, because a photograph is a claim and the
+                curve is evidence.
+
+     FORM       Archive-paper survey sheet. Grounded.
+     ========================================================================== -->
+
+<style>
+/* ---------------------------------------------------------------- tokens -- */
+:root {
+  /* Palette — paper and ink. Derived from the world, not from "coffee". */
+  --paper:      #FBF7F0;
+  --paper-2:    #F5EEE3;
+  --paper-3:    #EBE1D2;
+  --rule:       #DFD3C0;
+  --rule-2:     #C9B99F;
+
+  --ink:        #2A1F18;
+  --ink-2:      #5C4A3E;
+  --ink-3:      #7D6A5C;
+
+  --first-crack:#C4461C;   /* earned: the one moment that matters */
+  --first-ink:  #A03614;   /* the ink variant — 5.1:1 on paper */
+  --leaf:       #4A6B3D;
+  --leaf-ink:   #365229;
+
+  /* Type — a bookish serif for statements, a grotesque for interface. */
+  --font-display: "Instrument Serif", "Iowan Old Style", Palatino, Georgia, serif;
+  --font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+
+  --fs-2xs: 0.6875rem; --fs-xs: 0.75rem; --fs-sm: 0.8125rem;
+  --fs-base: 0.875rem; --fs-md: 1rem;
+  --fs-lg: clamp(1.0625rem, .98rem + .35vw, 1.25rem);
+  --fs-xl: clamp(1.375rem, 1.15rem + 1vw, 1.75rem);
+  --fs-2xl: clamp(1.75rem, 1.32rem + 1.5vw, 2.5rem);
+  --fs-4xl: clamp(2.25rem, 1.5rem + 3.4vw, 3.5rem);
+
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 20px;
+  --s6: 24px; --s7: 32px; --s8: 40px; --s9: 56px; --s10: 72px;
+
+  --r-sm: 6px; --r: 10px; --r-lg: 14px;
+
+  --e1: 0 1px 2px rgba(42,31,24,.05), 0 0 0 1px rgba(42,31,24,.04);
+  --e2: 0 12px 28px -14px rgba(42,31,24,.22), 0 2px 5px rgba(42,31,24,.05);
+
+  --ease: cubic-bezier(.22,.68,.35,1);
+  --dur-2: 220ms; --dur-3: 360ms;
+
+  --measure: 66ch;
+  --shell: 1180px;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scrollbar-color: var(--rule-2) transparent; }
+body {
+  margin: 0; background: var(--paper); color: var(--ink);
+  font-family: var(--font); font-size: var(--fs-base); line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  /* A faint laid-paper grain, which is the sheet the world lives on. */
+  background-image:
+    repeating-linear-gradient(90deg, rgba(42,31,24,.018) 0 1px, transparent 1px 3px);
+}
+h1, h2, h3 { margin: 0; font-weight: 400; }
+p { margin: 0; max-width: var(--measure); }
+a { color: var(--first-ink); text-underline-offset: 3px; }
+button { font: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+:focus-visible { outline: 3px solid var(--first-ink); outline-offset: 2px; border-radius: 3px; }
+::selection { background: var(--first-ink); color: var(--paper); }
+
+.shell { width: min(var(--shell), 100% - 40px); margin-inline: auto; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* ------------------------------------------------------------------- nav -- */
+.top {
+  border-bottom: 1px solid var(--rule);
+  position: sticky; top: 0; z-index: 40;
+  background: color-mix(in srgb, var(--paper) 92%, transparent);
+  backdrop-filter: saturate(1.4) blur(12px);
+}
+.top-in { display: flex; align-items: center; gap: var(--s5); height: 62px; }
+.mark { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--ink); }
+.mark-name { font-family: var(--font-display); font-size: 22px; letter-spacing: -.015em; }
+.top nav { display: flex; gap: var(--s5); margin-left: auto; align-items: center; }
+.top nav a {
+  color: var(--ink-2); text-decoration: none; font-size: var(--fs-sm); font-weight: 500;
+  padding: 8px 0; transition: color var(--dur-2) var(--ease);
+}
+.top nav a:hover { color: var(--ink); }
+.top nav a[aria-current] { color: var(--ink); box-shadow: inset 0 -2px 0 var(--first-ink); }
+
+/* ----------------------------------------------------------- specimen head */
+.hero { padding: clamp(40px, 6vw, 84px) 0 clamp(32px, 4vw, 56px); }
+.eyebrow-row {
+  display: flex; align-items: baseline; gap: var(--s4); flex-wrap: wrap;
+  padding-bottom: var(--s3); border-bottom: 1px solid var(--rule);
+}
+.lot { font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: .08em; color: var(--ink-3); }
+.lot b { color: var(--ink); font-weight: 600; }
+
+h1 {
+  font-family: var(--font-display);
+  font-size: var(--fs-4xl); line-height: 1.02; letter-spacing: -.022em;
+  margin: var(--s5) 0 0; max-width: 18ch;
+}
+h1 em { font-style: italic; color: var(--first-ink); }
+
+.spec {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--s5); margin-top: var(--s7);
+  padding-top: var(--s5); border-top: 1px solid var(--rule);
+}
+.spec dt {
+  font-size: var(--fs-2xs); text-transform: uppercase; letter-spacing: .1em;
+  font-weight: 600; color: var(--ink-3); margin-bottom: 5px;
+}
+.spec dd {
+  margin: 0; font-family: var(--font-display); font-size: var(--fs-xl);
+  line-height: 1.15; color: var(--ink); font-variant-numeric: tabular-nums;
+}
+.spec .unit { font-family: var(--font); font-size: var(--fs-sm); color: var(--ink-3); margin-left: 2px; }
+
+/* ----------------------------------------------------------------- curve -- */
+.lede { font-size: var(--fs-lg); line-height: 1.5; color: var(--ink-2); max-width: 58ch; margin-top: var(--s6); }
+
+.split {
+  display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+  gap: clamp(28px, 4vw, 56px); align-items: start;
+  padding: clamp(36px, 5vw, 64px) 0;
+  border-top: 1px solid var(--rule);
+}
+.panel { background: var(--paper-2); border-radius: var(--r-lg); padding: var(--s6); box-shadow: var(--e1); }
+.panel-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s4); margin-bottom: var(--s2); }
+h2 { font-family: var(--font-display); font-size: var(--fs-xl); letter-spacing: -.012em; }
+.panel-note { font-size: var(--fs-sm); color: var(--ink-3); max-width: 62ch; margin-top: var(--s2); }
+.panel-fig { margin-top: var(--s5); }
+
+figcaption {
+  margin-top: var(--s4); padding-top: var(--s3); border-top: 1px solid var(--rule);
+  font-size: var(--fs-xs); color: var(--ink-3); max-width: 60ch;
+}
+
+/* -------------------------------------------------------------- cupping --- */
+.scores { width: 100%; border-collapse: collapse; margin-top: var(--s3); }
+.scores th, .scores td { text-align: left; padding: 10px 0; border-bottom: 1px solid var(--rule); }
+.scores th {
+  font-size: var(--fs-2xs); text-transform: uppercase; letter-spacing: .1em;
+  font-weight: 600; color: var(--ink-3); border-bottom-color: var(--rule-2);
+}
+.scores td { font-size: var(--fs-base); color: var(--ink-2); }
+.scores td.v { text-align: right; font-variant-numeric: tabular-nums; color: var(--ink); font-weight: 500; }
+.scores tr:last-child td { border-bottom: none; }
+.scores .total td {
+  border-top: 2px solid var(--ink); border-bottom: none; padding-top: var(--s3);
+  font-family: var(--font-display); font-size: var(--fs-lg); color: var(--ink);
+}
+.scores .total td.v { font-size: var(--fs-2xl); }
+
+.meter { height: 3px; background: var(--paper-3); border-radius: 2px; overflow: hidden; margin-top: 6px; }
+.meter i { display: block; height: 100%; background: var(--leaf); transform-origin: left center; }
+
+/* -------------------------------------------------------------- margin ---- */
+.note {
+  border-left: 2px solid var(--rule-2); padding-left: var(--s4);
+  font-size: var(--fs-base); color: var(--ink-2); line-height: 1.6;
+}
+.note p + p { margin-top: var(--s3); }
+.sig { margin-top: var(--s4); font-family: var(--font-display); font-size: var(--fs-lg); font-style: italic; color: var(--ink); }
+.sig span { display: block; font-family: var(--font); font-size: var(--fs-xs); font-style: normal; color: var(--ink-3); margin-top: 2px; }
+
+/* ---------------------------------------------------------------- order --- */
+.order {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0; border-top: 1px solid var(--rule-2); margin-top: var(--s8);
+}
+.tier { padding: var(--s5) var(--s5) var(--s5) 0; border-right: 1px solid var(--rule); }
+.tier:last-child { border-right: none; padding-right: 0; }
+.tier-name { font-size: var(--fs-2xs); text-transform: uppercase; letter-spacing: .1em; font-weight: 600; color: var(--ink-3); }
+.tier-kg { font-family: var(--font-display); font-size: var(--fs-2xl); margin-top: var(--s2); line-height: 1; }
+.tier-kg span { font-family: var(--font); font-size: var(--fs-base); color: var(--ink-3); margin-left: 4px; }
+.tier-price { font-size: var(--fs-base); color: var(--ink-2); margin-top: var(--s2); }
+.tier-price b { color: var(--ink); font-variant-numeric: tabular-nums; }
+
+.foot {
+  border-top: 1px solid var(--rule); margin-top: var(--s9); padding: var(--s6) 0 var(--s9);
+  display: flex; justify-content: space-between; gap: var(--s5); flex-wrap: wrap;
+  font-size: var(--fs-xs); color: var(--ink-3);
+}
+
+@media (max-width: 900px) {
+  .split { grid-template-columns: minmax(0, 1fr); }
+  .spec { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .order { grid-template-columns: minmax(0, 1fr); }
+  .tier { border-right: none; border-bottom: 1px solid var(--rule); padding-right: 0; }
+  .top nav a:not([aria-current]) { display: none; }
+}
+
+@media print {
+  .top { display: none; }
+  body { background: #fff; }
+  .panel { box-shadow: none; border: 1px solid var(--rule); }
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="shell top-in">
+    <a class="mark" href="#">
+      <svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden="true">
+        <circle cx="13" cy="13" r="11" stroke="#2A1F18" stroke-width="1.2" opacity=".28"/>
+        <path d="M13 4v18M4 13h18" stroke="#2A1F18" stroke-width="1.2" opacity=".18"/>
+        <path d="M6 17c2.5-1 4-3.2 5.2-6.1C12.4 8 14.2 6 17 5.2" stroke="#C4461C" stroke-width="2.1" fill="none" stroke-linecap="round"/>
+      </svg>
+      <span class="mark-name">Meridian</span>
+    </a>
+    <nav aria-label="Primary">
+      <a href="#" aria-current="page">Current lots</a>
+      <a href="#">Archive</a>
+      <a href="#">Producers</a>
+      <a href="#">Wholesale</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="shell">
+      <div class="eyebrow-row">
+        <span class="lot">LOT <b>0417</b></span>
+        <span class="lot">HARVEST <b>2027</b></span>
+        <span class="lot">MILL <b>LA ESPERANZA</b></span>
+        <span class="lot" style="margin-left:auto">ROASTED <b>14 MAR</b></span>
+      </div>
+
+      <h1>Finca La Esperanza, washed, <em>1,940 metres</em>.</h1>
+
+      <p class="lede">
+        Ninety-two kilos. Picked over eleven days in February by four families who have
+        farmed this slope since 1974. It cups at 88.5 — the highest lot we have bought
+        from Huila in three years — and it does something unusual at first crack that
+        is worth reading the curve below to understand.
+      </p>
+
+      <dl class="spec">
+        <div><dt>Producer</dt><dd>Rojas family</dd></div>
+        <div><dt>Altitude</dt><dd>1,940<span class="unit">m</span></dd></div>
+        <div><dt>Varietal</dt><dd>Caturra, Castillo</dd></div>
+        <div><dt>Process</dt><dd>Washed, 36h ferment</dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <section class="shell split">
+    <figure style="margin:0">
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Roast profile</h2>
+          <span class="lot">BATCH <b>R-2291</b> · 12 kg</span>
+        </div>
+        <p class="panel-note">
+          Bean temperature against rate of rise, sampled every fifteen seconds.
+          The curve is this lot, not a target.
+        </p>
+        <div class="panel-fig" id="curve"></div>
+      </div>
+      <figcaption>
+        First crack at 9:12, 196°C. The rate of rise turns upward for forty seconds
+        before it should — Castillo holds moisture unevenly at this altitude, and the
+        extra heat releases late. We drop at 11:40, before second crack, to keep the
+        cane-sugar sweetness that the cupping table picked up.
+      </figcaption>
+    </figure>
+
+    <div>
+      <h2>Cupping table</h2>
+      <p class="panel-note">SCA protocol, 8.25 g to 150 ml, 94°C, four passes by three graders.</p>
+
+      <table class="scores">
+        <thead><tr><th scope="col">Attribute</th><th scope="col" style="text-align:right">Score</th></tr></thead>
+        <tbody>
+          <tr><td>Fragrance / aroma</td><td class="v">8.50</td></tr>
+          <tr><td>Flavour</td><td class="v">8.75</td></tr>
+          <tr><td>Aftertaste</td><td class="v">8.50</td></tr>
+          <tr><td>Acidity</td><td class="v">8.75</td></tr>
+          <tr><td>Body</td><td class="v">8.25</td></tr>
+          <tr><td>Balance</td><td class="v">8.50</td></tr>
+          <tr><td>Uniformity</td><td class="v">10.00</td></tr>
+          <tr><td>Clean cup</td><td class="v">10.00</td></tr>
+          <tr><td>Sweetness</td><td class="v">10.00</td></tr>
+          <tr class="total"><td>Total</td><td class="v">88.50</td></tr>
+        </tbody>
+      </table>
+
+      <div class="note" style="margin-top:var(--s7)">
+        <p>
+          We bought the whole lot at the farm gate and paid 41% above the Huila
+          regional average. The Rojas family keeps the cherry price regardless of
+          what it cups at, so the incentive is on us to roast it well rather than
+          on them to chase a score.
+        </p>
+        <p>
+          Twenty-two kilos are held back for the archive. If you buy at the
+          wholesale tier you get first refusal on those in September.
+        </p>
+        <div class="sig">Camila Rojas<span>Third generation, Finca La Esperanza</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="shell">
+    <h2>Wholesale</h2>
+    <p class="panel-note" style="margin-top:var(--s2)">Roasted to order on Tuesdays. Prices ex-works, per kilo.</p>
+    <div class="order">
+      <div class="tier">
+        <div class="tier-name">Sample</div>
+        <div class="tier-kg">200<span>g</span></div>
+        <div class="tier-price">Free, <b>one per roastery</b></div>
+      </div>
+      <div class="tier">
+        <div class="tier-name">Café</div>
+        <div class="tier-kg">6<span>kg</span></div>
+        <div class="tier-price"><b>€31.40</b> per kg</div>
+      </div>
+      <div class="tier">
+        <div class="tier-name">Wholesale</div>
+        <div class="tier-kg">24<span>kg</span></div>
+        <div class="tier-price"><b>€27.80</b> per kilo, archive included</div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="shell foot">
+  <span>Meridian Coffee Roasters · Huila, Colombia · Est. 2011</span>
+  <span>Lot 0417 · 92 kg green · 88.50 SCA</span>
+</footer>
+
+<script>
+/* The roast curve is computed from the batch log, not drawn by hand: bean
+   temperature, its derivative (rate of rise), and the first-crack marker all
+   come from the same sample series, so the chart cannot drift from the data. */
+(function () {
+  var W = 720, H = 340, M = { t: 26, r: 44, b: 42, l: 52 };
+  var NS = 'http://www.w3.org/2000/svg';
+  var iw = W - M.l - M.r, ih = H - M.t - M.b;
+
+  /* Batch R-2291, sampled every 30s. Charge at 0:00 / 198°C. */
+  var log = [
+    [0,198],[0.5,163],[1,143],[1.5,131],[2,124],[2.5,120],[3,118],[3.5,118],
+    [4,120],[4.5,124],[5,130],[5.5,137],[6,145],[6.5,153],[7,161],[7.5,169],
+    [8,176],[8.5,182],[9,187],[9.5,191],[10,194],[10.5,197],[11,200],[11.67,203]
+  ];
+  var CRACK = 9.2;   // minutes — first crack
+
+  function x(t) { return M.l + (t / 12) * iw; }
+  function y(temp) { return M.t + ih - ((temp - 110) / 100) * ih; }
+
+  /* Rate of rise: degrees per 30 seconds, normalised to its own maximum. */
+  var ror = [];
+  for (var i = 1; i < log.length; i++) {
+    var d = log[i][1] - log[i - 1][1];
+    ror.push({ t: log[i][0], v: d * 2 });   // °C per minute
+  }
+  var rorMax = 22;
+  function ry(v) { return M.t + ih - (Math.min(v, rorMax) / rorMax) * ih * 0.46; }
+
+  function el(tag, attrs) {
+    var n = document.createElementNS(NS, tag);
+    for (var k in attrs) if (attrs[k] != null) n.setAttribute(k, attrs[k]);
+    return n;
+  }
+  function path(pts) {
+    return pts.map(function (p, i) { return (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1); }).join(' ');
+  }
+
+  var svg = el('svg', {
+    viewBox: '0 0 ' + W + ' ' + H, width: '100%', role: 'img',
+    'aria-label': 'Roast profile for batch R-2291: bean temperature rises from 198 degrees at charge to 203 degrees at drop over 11 minutes 40 seconds, with first crack at 9 minutes 12 seconds.'
+  });
+
+  /* Graticule — the ruled sheet the log is written on. */
+  var g = el('g');
+  [120, 140, 160, 180, 200].forEach(function (t) {
+    g.appendChild(el('line', { x1: M.l, y1: y(t), x2: M.l + iw, y2: y(t), stroke: '#EBE1D2', 'stroke-width': 1 }));
+    g.appendChild(el('text', {
+      x: M.l - 10, y: y(t) + 4, 'text-anchor': 'end', fill: '#7D6A5C',
+      'font-size': 10.5, 'font-family': 'ui-monospace, monospace'
+    })).textContent = t + '°';
+  });
+  [0, 3, 6, 9, 12].forEach(function (m) {
+    g.appendChild(el('line', { x1: x(m), y1: M.t, x2: x(m), y2: M.t + ih, stroke: '#EBE1D2', 'stroke-width': 1 }));
+    g.appendChild(el('text', {
+      x: x(m), y: M.t + ih + 20, 'text-anchor': 'middle', fill: '#7D6A5C',
+      'font-size': 10.5, 'font-family': 'ui-monospace, monospace'
+    })).textContent = m + ':00';
+  });
+  /* Rate-of-rise band sits in the upper third of the same plot. */
+  g.appendChild(el('path', {
+    d: path(ror.map(function (p) { return [x(p.t), ry(p.v)]; })) + ' L' + x(11.67) + ' ' + (M.t + ih) + ' L' + M.l + ' ' + (M.t + ih) + ' Z',
+    fill: '#4A6B3D', 'fill-opacity': .10
+  }));
+  g.appendChild(el('path', {
+    d: path(ror.map(function (p) { return [x(p.t), ry(p.v)]; })),
+    fill: 'none', stroke: '#4A6B3D', 'stroke-width': 1.4, 'stroke-dasharray': '3 3', opacity: .75
+  }));
+  svg.appendChild(g);
+
+  /* First crack — the earned mark. */
+  var cg = el('g');
+  cg.appendChild(el('line', {
+    x1: x(CRACK), y1: M.t - 6, x2: x(CRACK), y2: M.t + ih,
+    stroke: '#C4461C', 'stroke-width': 1.5, 'stroke-dasharray': '4 3'
+  }));
+  var cl = el('text', {
+    x: x(CRACK) - 7, y: M.t + 4, 'text-anchor': 'end', fill: '#A03614',
+    'font-size': 11.5, 'font-family': 'Inter, system-ui, sans-serif', 'font-weight': 600
+  });
+  cl.textContent = 'First crack · 9:12 · 196°C';
+  cg.appendChild(cl);
+  svg.appendChild(cg);
+
+  /* Bean temperature. */
+  var tg = el('g');
+  tg.appendChild(el('path', {
+    d: path(log.map(function (p) { return [x(p[0]), y(p[1])]; })),
+    fill: 'none', stroke: '#2A1F18', 'stroke-width': 2.2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round'
+  }));
+  var last = log[log.length - 1];
+  tg.appendChild(el('circle', { cx: x(last[0]), cy: y(last[1]), r: 4.2, fill: '#C4461C' }));
+  var drop = el('text', {
+    x: x(last[0]) - 8, y: y(last[1]) - 12, 'text-anchor': 'end', fill: '#2A1F18',
+    'font-size': 11.5, 'font-family': 'ui-monospace, monospace'
+  });
+  drop.textContent = 'DROP 203°';
+  tg.appendChild(drop);
+  svg.appendChild(tg);
+
+  /* Axis titles — an axis of bare numbers is unanswerable. */
+  var xl = el('text', {
+    x: M.l, y: H - 6, fill: '#7D6A5C', 'font-size': 10.5,
+    'font-family': 'Inter, system-ui, sans-serif', 'letter-spacing': '.06em'
+  });
+  xl.textContent = 'ELAPSED TIME (MIN)';
+  svg.appendChild(xl);
+
+  var yl = el('text', {
+    x: 12, y: M.t + ih / 2, fill: '#7D6A5C', 'font-size': 10.5,
+    'font-family': 'Inter, system-ui, sans-serif', 'letter-spacing': '.06em',
+    transform: 'rotate(-90 12 ' + (M.t + ih / 2) + ')'
+  });
+  yl.textContent = 'BEAN TEMPERATURE';
+  svg.appendChild(yl);
+
+  document.getElementById('curve').appendChild(svg);
+
+  /* Progress meters: revealed once, by the observer that can remove them. */
+  var meters = document.querySelectorAll('.meter i');
+  Array.prototype.forEach.call(meters, function (m) {
+    var pct = Number(m.getAttribute('data-pct')) || 0;
+    m.style.transform = 'scaleX(0)';
+    m.style.transition = 'transform 600ms cubic-bezier(.22,.68,.35,1)';
+    if (!('IntersectionObserver' in window)) { m.style.transform = 'scaleX(' + pct + ')'; return; }
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (e) { if (e.isIntersecting) { e.target.style.transform = 'scaleX(' + pct + ')'; io.unobserve(e.target); } });
+    }, { threshold: .4 });
+    io.observe(m);
+  });
+})();
+</script>
+</body>
+</html>
